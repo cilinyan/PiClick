@@ -152,12 +152,12 @@ def draw_sample(sample: dict, out_path: str = None) -> np.ndarray:
     img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
     img = np.ascontiguousarray(img, dtype=np.uint8)
     mask = np.array(np.array(sample['instances'], dtype=int) == 1)
-    img = draw_masks(img, mask, np.array(PALETTE, dtype=np.uint8), alpha=0.8)
+    img = draw_masks(img, mask, np.array(reversed(PALETTE), dtype=np.uint8), alpha=0.7)
     points_pos, points_neg = sample['points'].reshape((2, -1, 3)).astype(int)
-    for y, x, tag in points_pos:  # blue
+    for y, x, tag in points_pos:  # red
         if tag == -1: continue
         img = cv2.circle(img, (x, y), radius=1, color=(0, 0, 255), thickness=-1)
-    for y, x, tag in points_neg:  # red
+    for y, x, tag in points_neg:  # blue
         if tag == -1: continue
         img = cv2.circle(img, (x, y), radius=1, color=(255, 0, 0), thickness=-1)
     h, w = sample['data_info']['ori_shape']
