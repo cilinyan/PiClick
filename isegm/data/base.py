@@ -40,8 +40,6 @@ class ISDataset(torch.utils.data.dataset.Dataset):
         sample = self.get_sample(index)
         sample = self.augment_sample(sample)
 
-        import pdb; pdb.set_trace()
-
         sample.remove_small_objects(self.min_object_area)
 
         self.points_sampler.sample_object(sample)
@@ -51,7 +49,8 @@ class ISDataset(torch.utils.data.dataset.Dataset):
         output = {
             'images': self.to_tensor(sample.image),
             'points': points.astype(np.float32),
-            'instances': mask
+            'instances': mask,
+            'data_info': sample.data_info,
         }
 
         if self.with_image_info:

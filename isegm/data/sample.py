@@ -9,6 +9,7 @@ class DSample:
     def __init__(self, image, encoded_masks, objects=None,
                  objects_ids=None, ignore_ids=None, sample_id=None):
         self.image = image
+        self._ori_shape = image.shape[-2]
         self.sample_id = sample_id
 
         if len(encoded_masks.shape) == 2:
@@ -57,6 +58,10 @@ class DSample:
         self.remove_small_objects(min_area=1)
 
         self._augmented = True
+
+    @property
+    def data_info(self) -> dict:
+        return dict(image=self.image, mask=self._encoded_masks, object=self._objects, ori_shape=self._ori_shape)
 
     def reset_augmentation(self):
         if not self._augmented:
