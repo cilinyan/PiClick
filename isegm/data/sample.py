@@ -9,7 +9,7 @@ class DSample:
     def __init__(self, image, encoded_masks, objects=None,
                  objects_ids=None, ignore_ids=None, sample_id=None):
         self.image = image
-        self._ori_shape = image.shape[-2]
+        self._ori_shape = image.shape[:2]
         self.sample_id = sample_id
 
         if len(encoded_masks.shape) == 2:
