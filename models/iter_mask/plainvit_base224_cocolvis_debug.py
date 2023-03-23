@@ -102,7 +102,7 @@ def train(model, cfg, model_cfg):
         epoch_len=2000
     )
 
-    # import pdb; pdb.set_trace()
+    import pdb; pdb.set_trace()
 
     optimizer_params = {
         'lr': 5e-4, 'betas': (0.9, 0.999), 'eps': 1e-8
