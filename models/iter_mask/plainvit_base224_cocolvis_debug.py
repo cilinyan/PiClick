@@ -103,6 +103,7 @@ def train(model, cfg, model_cfg):
         epoch_len=2000
     )
 
+    draw_points(trainset[0], '/data/clyan/1.jpg')
     import pdb; pdb.set_trace()
 
     optimizer_params = {
