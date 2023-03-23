@@ -136,3 +136,5 @@ dmypy.json
 /data
 
 debug/data/
+datasets/
+weights/
