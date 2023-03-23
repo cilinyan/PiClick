@@ -25,7 +25,7 @@ def point_select_check():
     mask = np.array([[0, 1, 1, 0],
                      [1, 1, 1, 1],
                      [0, 1, 0, 0]])
-    print(get_point_candidates(mask, k=1.3))
+    print(get_point_candidates(mask, k=1.7))
     pass
 
 

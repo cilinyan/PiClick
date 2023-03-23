@@ -1,5 +1,6 @@
 from isegm.utils.exp_imports.default import *
 from isegm.model.modeling.transformer_helper.cross_entropy_loss import CrossEntropyLoss
+from tools.visual import draw_points
 
 MODEL_NAME = 'cocolvis_plainvit_base224'
 
@@ -15,19 +16,19 @@ def init_model(cfg):
     model_cfg.num_max_points = 24
 
     backbone_params = dict(
-        img_size=(224,224),
-        patch_size=(16,16),
+        img_size=(224, 224),
+        patch_size=(16, 16),
         in_chans=3,
         embed_dim=768,
         depth=12,
         num_heads=12,
-        mlp_ratio=4, 
+        mlp_ratio=4,
         qkv_bias=True,
     )
 
     neck_params = dict(
-        in_dim = 768,
-        out_dims = [256, 256, 256, 256],
+        in_dim=768,
+        out_dims=[256, 256, 256, 256],
     )
 
     head_params = dict(
