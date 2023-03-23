@@ -1,5 +1,5 @@
 INTERACTIVE_MODELS_PATH: "./weights"
-EXPS_PATH: "/playpen-raid2/qinliu/models/model_0125_2023"
+EXPS_PATH: "./weights/models"
 
 # (click) [clyan@qsh2-search-mstrain-1 ClickClick]$ ls datasets/
 # ADE20K  Berkeley  BraTS20  coco17  COCO_MVal  DAVIS  GrabCut  imagenet1k  LVIS  OAI_ZIB  SBD  VOC
