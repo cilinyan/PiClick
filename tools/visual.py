@@ -152,7 +152,7 @@ def draw_sample(sample: dict, out_path: str = None) -> np.ndarray:
     img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
     img = np.ascontiguousarray(img, dtype=np.uint8)
     mask = np.array(np.array(sample['instances'], dtype=int) == 1)
-    img = draw_masks(img, mask, np.array(reversed(PALETTE), dtype=np.uint8), alpha=0.7)
+    img = draw_masks(img, mask, np.array(list(reversed(PALETTE)), dtype=np.uint8), alpha=0.7)
     points_pos, points_neg = sample['points'].reshape((2, -1, 3)).astype(int)
     for y, x, tag in points_pos:  # red
         if tag == -1: continue
