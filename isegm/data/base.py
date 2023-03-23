@@ -39,6 +39,9 @@ class ISDataset(torch.utils.data.dataset.Dataset):
 
         sample = self.get_sample(index)
         sample = self.augment_sample(sample)
+
+        import pdb; pdb.set_trace()
+
         sample.remove_small_objects(self.min_object_area)
 
         self.points_sampler.sample_object(sample)
