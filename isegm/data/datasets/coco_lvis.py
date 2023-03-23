@@ -10,6 +10,24 @@ from isegm.data.sample import DSample
 
 
 class CocoLvisDataset(ISDataset):
+    """
+
+    anno_file: dict,
+        eg. anno['000000581913'] = {
+            "num_instance_masks": 5,
+            "hierarchy": {0: None, 1: None, 2: None, 3: None, 4: None}
+        }
+            anno['000000581921'] = {
+            "num_instance_masks": 5,
+            "hierarchy" {0: {'children': [1, 4], 'parent': None, 'node_level': 0}, 1: {'children': [], 'parent': 0, 'node_level': 1}, 2: None, 3: None, 4: {'children': [], 'parent': 0, 'node_level': 1}}
+        }
+
+    label_data: tuple, (encoded_layers, objs_mapping)
+        where, objs_mapping: List[Tuple[int, int]], [(layer_indx, mask_id), ...]
+        eg. ([array(..., dtype=uint8), array(..., dtype=uint8), array(..., dtype=uint8)],
+             [(0, 4), (1, 2), (2, 1), (1, 1), (1, 3), (0, 1), (0, 3), (0, 2), (0, 5)])
+    """
+
     def __init__(self, dataset_path, split='train', stuff_prob=0.0,
                  allow_list_name=None, anno_file='hannotation.pickle', **kwargs):
         super(CocoLvisDataset, self).__init__(**kwargs)

@@ -76,7 +76,7 @@ class MultiPointSampler(BasePointSampler):
         self._selected_masks = pos_masks
 
         neg_mask_bg = np.logical_not(binary_gt_mask)
-        neg_mask_border = self._get_border_mask(binary_gt_mask)
+        neg_mask_border = self._get_border_mask(binary_gt_mask)  # not dilate
         if len(sample) <= len(self._selected_masks):
             neg_mask_other = neg_mask_bg
         else:
@@ -113,12 +113,32 @@ class MultiPointSampler(BasePointSampler):
             pos_segments.extend(obj_pos_segments)
             neg_segments.extend(obj_neg_segments)
 
+        # 腐蚀缩小 mask
         pos_masks = [self._positive_erode(x) for x in pos_segments]
         neg_masks = [self._positive_erode(x) for x in neg_segments]
 
         return gt_mask, pos_masks, neg_masks
 
     def _sample_from_masks_layer(self, obj_id, sample: DSample):
+        """
+
+        Args:
+            obj_id:
+            sample:
+
+        Returns:
+
+        if not self.use_hierarchy:
+            gt_mask     original_mask
+            pos_masks   original_mask
+            neg_masks   None
+        else:
+            ... 改处逻辑不需要考虑
+            gt_mask     original_mask - child_mask(disabled)
+            pos_masks   original_mask - child_mask(small object)
+            neg_masks   original_mask - parent_mask
+
+        """
         objs_tree = sample._objects
 
         if not self.use_hierarchy:
