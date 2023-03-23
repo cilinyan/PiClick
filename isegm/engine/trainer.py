@@ -18,6 +18,24 @@ from isegm.utils.distributed import get_dp_wrapper, get_sampler, reduce_loss_dic
 from .optimizer import get_optimizer, get_optimizer_with_layerwise_decay
 
 
+def add_masks_by_points(sample: dict) -> dict:
+    """
+    根据当前的 points 生成对应的 gt masks
+    """
+    points_pos, points_neg = sample['points'].reshape((2, -1, 3)).astype(int)
+    layers = sample['data_info']['mask']
+    gt_mask = list()
+    for obj_id, info in sample['data_info']['object'].items():
+        layer_id, mask_id = info['mapping']
+        mask = np.array(layers[:, :, layer_id] == mask_id)
+        flag_pos = all((f == -1) or mask[x, y] for x, y, f in points_pos)
+        flag_neg = all((f == -1) or (not mask[x, y]) for x, y, f in points_neg)
+        if flag_pos and flag_neg:
+            gt_mask.append(np.array(deepcopy(mask), dtype=float))
+    sample['gt_masks'] = np.array(gt_mask)
+    return sample
+
+
 class ISTrainer(object):
     def __init__(self, model, cfg, model_cfg, loss_cfg,
                  trainset, valset,
@@ -137,7 +155,7 @@ class ISTrainer(object):
             self.train_data.sampler.set_epoch(epoch)
 
         log_prefix = 'Train' + self.task_prefix.capitalize()
-        tbar = tqdm(self.train_data, file=self.tqdm_out, ncols=100)\
+        tbar = tqdm(self.train_data, file=self.tqdm_out, ncols=100) \
             if self.is_master else self.train_data
 
         for metric in self.train_metrics:
@@ -174,10 +192,11 @@ class ISTrainer(object):
                     self.save_visualization(splitted_batch_data, outputs, global_step, prefix='train')
 
                 self.sw.add_scalar(tag=f'{log_prefix}States/learning_rate',
-                                   value=self.lr if not hasattr(self, 'lr_scheduler') else self.lr_scheduler.get_lr()[-1],
+                                   value=self.lr if not hasattr(self, 'lr_scheduler') else self.lr_scheduler.get_lr()[
+                                       -1],
                                    global_step=global_step)
 
-                tbar.set_description(f'Epoch {epoch}, training loss {train_loss/(i+1):.4f}')
+                tbar.set_description(f'Epoch {epoch}, training loss {train_loss / (i + 1):.4f}')
                 for metric in self.train_metrics:
                     metric.log_states(self.sw, f'{log_prefix}Metrics/{metric.name}', global_step)
 
@@ -230,7 +249,7 @@ class ISTrainer(object):
             val_loss += batch_losses_logging['overall'].item()
 
             if self.is_master:
-                tbar.set_description(f'Epoch {epoch}, validation loss: {val_loss/(i + 1):.4f}')
+                tbar.set_description(f'Epoch {epoch}, validation loss: {val_loss / (i + 1):.4f}')
                 for metric in self.val_metrics:
                     metric.log_states(self.sw, f'{log_prefix}Metrics/{metric.name}', global_step)
 
@@ -244,6 +263,7 @@ class ISTrainer(object):
                                    global_step=epoch, disable_avg=True)
 
     def batch_forward(self, batch_data, validation=False):
+        # TODO 更多的是点击一次即可完成分割，所以可以在第一次分割里面增加一个点的概率
         metrics = self.val_metrics if validation else self.train_metrics
         losses_logging = dict()
 
@@ -271,6 +291,7 @@ class ISTrainer(object):
                         eval_model = self.click_models[click_indx]
 
                     net_input = torch.cat((image, prev_output), dim=1) if self.net.with_prev_mask else image
+                    # TODO 输出多个 Mask, 设置策略选择其中一个作为 prev_output: score最大？ 与 gt_label 匹配上的 mask 中 score 最大
                     prev_output = torch.sigmoid(eval_model(net_input, points)['instances'])
 
                     points = get_next_points(prev_output, orig_gt_mask, points, click_indx + 1)
@@ -284,10 +305,14 @@ class ISTrainer(object):
 
             batch_data['points'] = points
 
+            # 根据当前点生成 gt masks
+            batch_data = add_masks_by_points(batch_data)
+
             net_input = torch.cat((image, prev_output), dim=1) if self.net.with_prev_mask else image
             output = self.net(net_input, points)
 
             loss = 0.0
+            # TODO 修改 loss, 在 models 里面可以看到, 只有 instance_loss 这个 loss
             loss = self.add_loss('instance_loss', loss, losses_logging, validation,
                                  lambda: (output['instances'], batch_data['instances']))
             loss = self.add_loss('instance_aux_loss', loss, losses_logging, validation,

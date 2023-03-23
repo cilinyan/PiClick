@@ -103,8 +103,8 @@ def train(model, cfg, model_cfg):
         epoch_len=2000
     )
 
-    draw_sample(trainset[0], '/data/clyan/1.jpg')
-    import pdb; pdb.set_trace()
+    # draw_sample(trainset[0], '/data/clyan/1.jpg')
+    # import pdb; pdb.set_trace()
 
     optimizer_params = {
         'lr': 5e-4, 'betas': (0.9, 0.999), 'eps': 1e-8

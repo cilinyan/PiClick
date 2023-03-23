@@ -147,11 +147,18 @@ def masks_select(mask: np.ndarray, selected: List[int]) -> np.ndarray:
     return np.array([mask == v for v in selected])
 
 
-def draw_sample(sample: dict, out_path: str = None) -> np.ndarray:
+def draw_sample(sample: dict, out_path: str = None, mode: str = 'ori') -> np.ndarray:
     img = np.array(sample['images'].permute((1, 2, 0)).cpu().numpy() * 255, dtype=np.uint8)
     img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
     img = np.ascontiguousarray(img, dtype=np.uint8)
-    mask = np.array(np.array(sample['instances'], dtype=int) == 1)
+
+    if mode == 'ori':
+        mask = np.array(np.array(sample['instances'], dtype=int) == 1)
+    elif mode == 'gt':
+        mask = np.array(np.array(sample['gt_masks'], dtype=int) == 1)
+    else:
+        raise
+
     img = draw_masks(img, mask, np.array(list(reversed(PALETTE)), dtype=np.uint8), alpha=0.7)
     points_pos, points_neg = sample['points'].reshape((2, -1, 3)).astype(int)
     for y, x, tag in points_pos:  # red
