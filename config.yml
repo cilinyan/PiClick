@@ -17,8 +17,8 @@ HARD_PATH: "./datasets/HARD"
 
 # Train datasets
 SBD_PATH: "./datasets/SBD/dataset"
-COCO_PATH: "./datasets/coco17"
-LVIS_v1_PATH: "./datasets/coco17"
+COCO_PATH: "./datasets/LVIS"
+LVIS_v1_PATH: "./datasets/LVIS"
 OPENIMAGES_PATH: "./datasets/OpenImages"
 PASCALVOC_PATH: "./datasets/VOC"
 ADE20K_PATH: "./datasets/ADE20K"
