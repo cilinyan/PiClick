@@ -1,6 +1,6 @@
 from isegm.utils.exp_imports.default import *
 from isegm.model.modeling.transformer_helper.cross_entropy_loss import CrossEntropyLoss
-from tools.visual import draw_points
+from tools.visual import draw_sample
 
 MODEL_NAME = 'cocolvis_plainvit_base224'
 
@@ -103,7 +103,7 @@ def train(model, cfg, model_cfg):
         epoch_len=2000
     )
 
-    draw_points(trainset[0], '/data/clyan/1.jpg')
+    draw_sample(trainset[0], '/data/clyan/1.jpg')
     import pdb; pdb.set_trace()
 
     optimizer_params = {

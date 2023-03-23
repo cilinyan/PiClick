@@ -147,8 +147,9 @@ def masks_select(mask: np.ndarray, selected: List[int]) -> np.ndarray:
     return np.array([mask == v for v in selected])
 
 
-def draw_points(sample: dict, out_path: str = None) -> np.ndarray:
+def draw_sample(sample: dict, out_path: str = None) -> np.ndarray:
     img = np.array(sample['images'].permute((1, 2, 0)).cpu().numpy() * 255, dtype=np.uint8)
+    img = np.ascontiguousarray(img, dtype=np.uint8)
     mask = np.array(np.array(sample['instances'], dtype=int) == 1)
     img = draw_masks(img, mask, np.array(PALETTE, dtype=np.uint8), alpha=0.8)
     points_pos, points_neg = sample['points'].reshape((2, -1, 3)).astype(int)
