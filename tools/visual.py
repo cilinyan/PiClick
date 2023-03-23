@@ -149,6 +149,7 @@ def masks_select(mask: np.ndarray, selected: List[int]) -> np.ndarray:
 
 def draw_sample(sample: dict, out_path: str = None) -> np.ndarray:
     img = np.array(sample['images'].permute((1, 2, 0)).cpu().numpy() * 255, dtype=np.uint8)
+    img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
     img = np.ascontiguousarray(img, dtype=np.uint8)
     mask = np.array(np.array(sample['instances'], dtype=int) == 1)
     img = draw_masks(img, mask, np.array(PALETTE, dtype=np.uint8), alpha=0.8)
