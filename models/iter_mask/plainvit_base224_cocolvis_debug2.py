@@ -1,3 +1,7 @@
+import sys
+
+sys.path.insert(1, '.')
+
 from isegm.utils.exp_imports.default import *
 from isegm.model.losses import DETRLikeLoss
 from tools.visual import draw_sample
@@ -126,7 +130,8 @@ def train(model, model_cfg):
         prev_output = torch.zeros_like(image, dtype=torch.float32)[:, :1, :, :]
         net_input = torch.cat((image, prev_output), dim=1)
         output = model(net_input, points)
-        import pdb; pdb.set_trace()
+        import pdb;
+        pdb.set_trace()
 
 
 if __name__ == '__main__':
