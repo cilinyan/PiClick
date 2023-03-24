@@ -134,9 +134,6 @@ def train(model, model_cfg):
         epoch_len=2000
     )
 
-    import pdb;
-    pdb.set_trace()
-
     train_data = DataLoader(
         trainset, 32,
         sampler=get_sampler(trainset, shuffle=True, distributed=False),
@@ -144,7 +141,7 @@ def train(model, model_cfg):
         num_workers=8,
         collate_fn=collate_fn,
     )
-
+    import pdb; pdb.set_trace()
     for batch_data in train_data:
         batch_data = {k: v.to(device) for k, v in batch_data.items()}
         image, gt_mask, points = batch_data['images'], batch_data['instances'], batch_data['points']
@@ -152,8 +149,6 @@ def train(model, model_cfg):
         prev_output = torch.zeros_like(image, dtype=torch.float32)[:, :1, :, :]
         net_input = torch.cat((image, prev_output), dim=1)
         output = model(net_input, points)
-        import pdb;
-        pdb.set_trace()
 
 
 if __name__ == '__main__':
