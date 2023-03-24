@@ -347,8 +347,7 @@ class DETRLikeLoss(nn.Module):
 
     def get_targets(self, cls_scores_list, mask_preds_list, gt_labels_list,
                     gt_masks_list, img_metas):
-        """Compute classification and mask targets for all images for a decoder
-        layer.
+        """Compute classification and mask targets for all images for a decoder layer.
 
         Args:
             cls_scores_list (list[Tensor]): Mask score logits from a single
@@ -445,8 +444,7 @@ class DETRLikeLoss(nn.Module):
         mask_weights = mask_pred.new_zeros((self.num_queries,))
         mask_weights[pos_inds] = 1.0
 
-        return (labels, label_weights, mask_targets, mask_weights, pos_inds,
-                neg_inds)
+        return (labels, label_weights, mask_targets, mask_weights, pos_inds, neg_inds)
 
     def forward(self, outputs: Tuple, gt_masks: List[torch.tensor], img_metas=None):
         all_cls_scores, all_mask_preds = outputs

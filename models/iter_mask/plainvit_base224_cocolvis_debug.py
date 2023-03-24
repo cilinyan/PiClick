@@ -1,8 +1,13 @@
 from isegm.utils.exp_imports.default import *
-from isegm.model.modeling.transformer_helper.cross_entropy_loss import CrossEntropyLoss
+from isegm.model.losses import DETRLikeLoss
 from tools.visual import draw_sample
 
 MODEL_NAME = 'cocolvis_plainvit_base224'
+
+_PARAMS = dict(
+    num_queries=7,
+    num_classes=1,
+)
 
 
 def main(cfg):
@@ -32,13 +37,12 @@ def init_model(cfg):
     )
 
     head_params = dict(
+        num_classes=_PARAMS['num_classes'],
+        num_queries=_PARAMS['num_queries'],
         in_channels=[256, 256, 256, 256],
-        in_index=[0, 1, 2, 3],
-        channels=256,
-        dropout_ratio=0.1,
-        num_classes=1,
-        loss_decode=CrossEntropyLoss(),
-        align_corners=False,
+        feat_channels=256,
+        out_channels=256,
+        transformer_decoder_num_layers=6,
     )
 
     model = PlainVitModel(
@@ -62,7 +66,7 @@ def train(model, cfg, model_cfg):
     crop_size = model_cfg.crop_size
 
     loss_cfg = edict()
-    loss_cfg.instance_loss = NormalizedFocalLossSigmoid(alpha=0.5, gamma=2)
+    loss_cfg.instance_loss = DETRLikeLoss(num_queries=_PARAMS['num_queries'], num_classes=_PARAMS['num_classes'])
     loss_cfg.instance_loss_weight = 1.0
 
     train_augmentator = Compose([
@@ -106,9 +110,7 @@ def train(model, cfg, model_cfg):
     # draw_sample(trainset[0], '/data/clyan/1.jpg')
     # import pdb; pdb.set_trace()
 
-    optimizer_params = {
-        'lr': 5e-4, 'betas': (0.9, 0.999), 'eps': 1e-8
-    }
+    optimizer_params = {'lr': 5e-4, 'betas': (0.9, 0.999), 'eps': 1e-8}
 
     lr_scheduler = partial(torch.optim.lr_scheduler.MultiStepLR,
                            milestones=[49, 55], gamma=0.1)
@@ -121,5 +123,6 @@ def train(model, cfg, model_cfg):
                         image_dump_interval=3000,
                         metrics=[AdaptiveIoU()],
                         max_interactive_points=model_cfg.num_max_points,
-                        max_num_next_clicks=3)
+                        max_num_next_clicks=3,
+                        multi_output=True)
     trainer.run(num_epochs=55, validation=False)

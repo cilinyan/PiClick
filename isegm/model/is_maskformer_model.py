@@ -84,7 +84,7 @@ class MaskFormerModel(ISModel):
 
         self.backbone = VisionTransformer(**backbone_params)
         self.neck = SimpleFPN(**neck_params)
-        self.head = MaskFormerHead(in_channels=backbone_params['embed_dim'])
+        self.head = MaskFormerHead(**head_params)
 
     def backbone_forward(self, image, coord_features=None):
         coord_features = self.patch_embed_coords(coord_features)
@@ -104,6 +104,7 @@ class MaskFormerHead(nn.Module):
                  in_channels=[192, 384, 768, 1536],
                  feat_channels=256,
                  out_channels=256,
+                 transformer_decoder_num_layers=6,
                  enforce_decoder_input_project=True,
                  ):
         super(MaskFormerHead, self).__init__()
@@ -116,7 +117,7 @@ class MaskFormerHead(nn.Module):
                                           act_cfg=dict(type='ReLU'))
         self.transformer_decoder = DetrTransformerDecoder(
             return_intermediate=True,
-            num_layers=6,
+            num_layers=transformer_decoder_num_layers,
             transformerlayers=dict(
                 type='DetrTransformerDecoderLayer',
                 attn_cfgs=dict(
