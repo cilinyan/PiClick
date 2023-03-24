@@ -42,15 +42,13 @@ class ISModel(nn.Module):
         coord_features = self.maps_transform(coord_features)
         outputs = self.backbone_forward(image, coord_features)
 
-        import pdb;
-        pdb.set_trace()
         if not isinstance(outputs['instances'], tuple):
             outputs['instances'] = nn.functional.interpolate(outputs['instances'], size=image.size()[2:],
                                                              mode='bilinear', align_corners=True)
         else:
             all_cls_scores, all_mask_preds = outputs['instances']
             h_img, w_img = image.shape[-2:]
-            num_layer, batch_size, num_queries, h_feat, w_feat = outputs['instances'][1].shape
+            num_layer, batch_size, num_queries, h_feat, w_feat = all_mask_preds.shape
             all_mask_preds = torch.reshape(all_mask_preds, (num_layer * batch_size, num_queries, h_feat, w_feat))
             all_mask_preds = nn.functional.interpolate(all_mask_preds, size=image.size()[2:],
                                                        mode='bilinear', align_corners=True)

@@ -11,9 +11,12 @@ from tools.visual import draw_sample
 from torch.utils.data import DataLoader
 from isegm.utils.distributed import get_dp_wrapper, get_sampler, reduce_loss_dict
 from isegm.model.is_maskformer_model import MaskFormerModel
+from isegm.model.modeling.maskformer_helper.misc import multi_apply
 
 from collections import defaultdict
 from loguru import logger
+
+from copy import deepcopy
 
 MODEL_NAME = 'cocolvis_plainvit_base224'
 
@@ -23,6 +26,28 @@ _PARAMS = dict(
 )
 
 device = torch.device('cuda')
+
+TRAIN_CFG: dict = dict(
+    assigner=dict(type='MaskHungarianAssigner',
+                  cls_cost=dict(type='ClassificationCost', weight=1.0),
+                  mask_cost=dict(type='FocalLossCost', weight=20.0, binary_input=True),
+                  dice_cost=dict(type='DiceCost', weight=1.0, pred_act=True, eps=1.0)),
+    sampler=dict(type='MaskPseudoSampler')
+)
+
+
+def get_masks_by_points(points, data_info) -> np.ndarray:
+    points_pos, points_neg = points.reshape((2, -1, 3)).astype(int)
+    layers = data_info['mask']
+    gt_mask = list()
+    for obj_id, info in data_info['object'].items():
+        layer_id, mask_id = info['mapping']
+        mask = np.array(layers[:, :, layer_id] == mask_id)
+        flag_pos = all((f == -1) or mask[x, y] for x, y, f in points_pos)
+        flag_neg = all((f == -1) or (not mask[x, y]) for x, y, f in points_neg)
+        if flag_pos and flag_neg:
+            gt_mask.append(np.array(deepcopy(mask), dtype=float))
+    return np.array(gt_mask)
 
 
 def collate_fn(values):
@@ -90,6 +115,7 @@ def init_model():
 
     return model, model_cfg
 
+
 @logger.catch()
 def train(model, model_cfg):
     crop_size = model_cfg.crop_size
@@ -147,6 +173,7 @@ def train(model, model_cfg):
     for batch_data in train_data:
         batch_data = {k: v.to(device) if isinstance(v, torch.Tensor) else v for k, v in batch_data.items()}
         image, gt_mask, points = batch_data['images'], batch_data['instances'], batch_data['points']
+        gt_masks = multi_apply(get_masks_by_points, batch_data['points'], batch_data['data_info'])
         orig_image, orig_gt_mask, orig_points = image.clone(), gt_mask.clone(), points.clone()
         prev_output = torch.zeros_like(image, dtype=torch.float32)[:, :1, :, :]
         net_input = torch.cat((image, prev_output), dim=1)
