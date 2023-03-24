@@ -7,6 +7,7 @@ from isegm.model.losses import DETRLikeLoss
 from tools.visual import draw_sample
 from torch.utils.data import DataLoader
 from isegm.utils.distributed import get_dp_wrapper, get_sampler, reduce_loss_dict
+from isegm.model.is_maskformer_model import MaskFormerModel
 
 MODEL_NAME = 'cocolvis_plainvit_base224'
 
@@ -53,7 +54,7 @@ def init_model():
         transformer_decoder_num_layers=6,
     )
 
-    model = PlainVitModel(
+    model = MaskFormerModel(
         num_classes=_PARAMS['num_classes'],
         num_queries=_PARAMS['num_queries'],
         in_channels=[256, 256, 256, 256],
