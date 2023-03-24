@@ -231,6 +231,9 @@ def train(model, model_cfg):
         num_workers=8,
         collate_fn=collate_fn,
     )
+
+    assigner = MaskHungarianAssigner(**TRAIN_CFG['assigner'])
+    sampler = MaskPseudoSampler()
     # import pdb; pdb.set_trace()
     for batch_data in train_data:
         batch_data = {k: v.to(device) if isinstance(v, torch.Tensor) else v for k, v in batch_data.items()}
