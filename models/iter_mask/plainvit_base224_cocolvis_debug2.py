@@ -17,6 +17,7 @@ from collections import defaultdict
 from loguru import logger
 import pdb
 from copy import deepcopy
+from typing import Union
 
 MODEL_NAME = 'cocolvis_plainvit_base224'
 
@@ -38,7 +39,7 @@ TRAIN_CFG: dict = dict(
 
 def draw_sample_split(image: torch.Tensor,
                       points: torch.Tensor,
-                      mask: torch.Tensor,
+                      mask: Union[torch.Tensor, np.ndarray],
                       data_info: dict,
                       out_path: str = '/data/clyan/1.jpg',
                       ) -> np.ndarray:
@@ -67,7 +68,7 @@ def draw_sample_split(image: torch.Tensor,
 
 def draw_sample_split_debug(image: torch.Tensor,
                             points: torch.Tensor,
-                            mask: torch.Tensor,
+                            mask: Union[torch.Tensor, np.ndarray],
                             data_info: dict,
                             out_path: str = '/data/clyan/1.jpg',
                             ) -> np.ndarray:
@@ -93,7 +94,6 @@ def draw_sample_split_debug(image: torch.Tensor,
     img = cv2.resize(img, (w, h))
     if out_path is not None:
         cv2.imwrite(out_path, img)
-    return img
 
 
 def get_masks_by_points(points, data_info) -> np.ndarray:
@@ -241,6 +241,7 @@ def train(model, model_cfg):
         net_input = torch.cat((image, prev_output), dim=1)
         output = model(net_input, points)
         draw_sample_split(image[0], points[0], gt_mask[0], batch_data['data_info'][0])
+        draw_sample_split_debug(image[5], points[5], gt_masks[5], batch_data['data_info'][5])
         pdb.set_trace()
 
 
