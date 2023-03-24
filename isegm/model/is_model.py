@@ -48,7 +48,10 @@ class ISModel(nn.Module):
             outputs['instances'] = nn.functional.interpolate(outputs['instances'], size=image.size()[2:],
                                                              mode='bilinear', align_corners=True)
         else:
-            outputs['instances'][1] = nn.functional.interpolate(outputs['instances'][1], size=image.size()[2:],
+            ori_shape = image.size()[-1]
+            out_shape = outputs['instances'][1].shape[-1]
+            scale_factor = ori_shape // out_shape
+            outputs['instances'][1] = nn.functional.interpolate(outputs['instances'][1], scale_factor=scale_factor,
                                                                 mode='bilinear', align_corners=True)
         if self.with_aux_output:
             outputs['instances_aux'] = nn.functional.interpolate(outputs['instances_aux'], size=image.size()[2:],
