@@ -1,5 +1,7 @@
 import sys
 
+import torch
+
 sys.path.insert(1, '.')
 
 from isegm.utils.exp_imports.default import *
@@ -9,6 +11,8 @@ from torch.utils.data import DataLoader
 from isegm.utils.distributed import get_dp_wrapper, get_sampler, reduce_loss_dict
 from isegm.model.is_maskformer_model import MaskFormerModel
 
+from collections import defaultdict
+
 MODEL_NAME = 'cocolvis_plainvit_base224'
 
 _PARAMS = dict(
@@ -17,6 +21,20 @@ _PARAMS = dict(
 )
 
 device = torch.device('cuda')
+
+
+def collate_fn(values):
+    res = defaultdict(list)
+    for value in values:
+        for k, v in value.items():
+            res[k].append(v)
+    res = {
+        'images': torch.tensor(res['images']),
+        'points': torch.tensor(res['points']),
+        'instances': torch.tensor(res['instances']),
+        'data_info': res['data_info'],
+    }
+    return res
 
 
 def main():
@@ -116,13 +134,15 @@ def train(model, model_cfg):
         epoch_len=2000
     )
 
-    import pdb; pdb.set_trace()
+    import pdb;
+    pdb.set_trace()
 
     train_data = DataLoader(
         trainset, 32,
         sampler=get_sampler(trainset, shuffle=True, distributed=False),
         drop_last=True, pin_memory=True,
-        num_workers=8
+        num_workers=8,
+        collate_fn=collate_fn,
     )
 
     for batch_data in train_data:
