@@ -48,8 +48,15 @@ class ISModel(nn.Module):
             outputs['instances'] = nn.functional.interpolate(outputs['instances'], size=image.size()[2:],
                                                              mode='bilinear', align_corners=True)
         else:
+            h_img, w_img = image.shape[-2:]
+            num_layer, batch_size, num_queries, h_feat, w_feat = outputs['instances'][1].shape
+            outputs['instances'][1] = torch.reshape(outputs['instances'][1],
+                                                    (num_layer * batch_size, num_queries, h_feat, w_feat))
             outputs['instances'][1] = nn.functional.interpolate(outputs['instances'][1], size=image.size()[2:],
-                                                                mode='trilinear', align_corners=True)
+                                                                mode='bilinear', align_corners=True)
+            outputs['instances'][1] = torch.reshape(outputs['instances'][1],
+                                                    (num_layer * batch_size, num_queries, h_img, w_img))
+
         if self.with_aux_output:
             outputs['instances_aux'] = nn.functional.interpolate(outputs['instances_aux'], size=image.size()[2:],
                                                                  mode='bilinear', align_corners=True)
