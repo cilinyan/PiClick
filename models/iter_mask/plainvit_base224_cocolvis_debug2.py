@@ -29,9 +29,9 @@ def collate_fn(values):
         for k, v in value.items():
             res[k].append(v)
     res = {
-        'images': torch.tensor(res['images']),
-        'points': torch.tensor(res['points']),
-        'instances': torch.tensor(res['instances']),
+        'images': torch.stack(res['images']),
+        'points': torch.stack(res['points']),
+        'instances': torch.stack(res['instances']),
         'data_info': res['data_info'],
     }
     return res
