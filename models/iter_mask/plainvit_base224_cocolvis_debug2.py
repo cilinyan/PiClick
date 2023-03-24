@@ -57,7 +57,6 @@ def init_model():
     model = MaskFormerModel(
         num_classes=_PARAMS['num_classes'],
         num_queries=_PARAMS['num_queries'],
-        in_channels=[256, 256, 256, 256],
         use_disks=True,
         norm_radius=5,
         with_prev_mask=True,

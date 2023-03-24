@@ -66,12 +66,16 @@ class MaskFormerModel(ISModel):
     @serialize
     def __init__(
             self,
+            num_classes,
+            num_queries,
             backbone_params: dict,
             neck_params: dict,
             head_params: dict,
             random_split=False,
             **kwargs
     ):
+        self.num_classes = num_classes
+        self.num_queries = num_queries
         super().__init__(**kwargs)
         self.random_split = random_split
 
