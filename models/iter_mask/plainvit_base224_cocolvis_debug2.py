@@ -42,7 +42,6 @@ def draw_sample_split(image: torch.Tensor,
                       data_info: dict,
                       out_path: str = '/data/clyan/1.jpg',
                       ) -> np.ndarray:
-    image = image.cpu().numpy()
     points = points.cpu().numpy()
     img = np.array(image.permute((1, 2, 0)).cpu().numpy() * 255, dtype=np.uint8)
     img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
