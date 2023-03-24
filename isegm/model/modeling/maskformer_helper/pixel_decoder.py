@@ -85,7 +85,7 @@ class PixelDecoder(BaseModule):
         caffe2_xavier_init(self.mask_feature, bias=0)
         caffe2_xavier_init(self.last_feat_conv, bias=0)
 
-    def forward(self, feats, img_metas):
+    def forward(self, feats, img_metas=None):
         """
         Args:
             feats (list[Tensor]): Feature maps of each level. Each has
