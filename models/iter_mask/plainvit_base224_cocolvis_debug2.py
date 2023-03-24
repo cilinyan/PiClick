@@ -116,6 +116,8 @@ def train(model, model_cfg):
         epoch_len=2000
     )
 
+    import pdb; pdb.set_trace()
+
     train_data = DataLoader(
         trainset, 32,
         sampler=get_sampler(trainset, shuffle=True, distributed=False),
