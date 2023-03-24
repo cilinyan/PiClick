@@ -32,7 +32,7 @@ def collate_fn(values):
     res = {
         'images': torch.stack(res['images']),
         'points': torch.tensor(np.array(res['points'])),
-        'instances': torch.stack(res['instances']),
+        'instances': torch.tensor(np.array(res['instances'])),
         'data_info': res['data_info'],
     }
     return res
