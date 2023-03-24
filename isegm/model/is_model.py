@@ -42,6 +42,7 @@ class ISModel(nn.Module):
         coord_features = self.maps_transform(coord_features)
         outputs = self.backbone_forward(image, coord_features)
 
+        import pdb; pdb.set_trace()
         outputs['instances'] = nn.functional.interpolate(outputs['instances'], size=image.size()[2:],
                                                          mode='bilinear', align_corners=True)
         if self.with_aux_output:
