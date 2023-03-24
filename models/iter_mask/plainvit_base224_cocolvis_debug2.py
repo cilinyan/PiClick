@@ -241,7 +241,6 @@ def train(model, model_cfg):
         net_input = torch.cat((image, prev_output), dim=1)
         output = model(net_input, points)
         draw_sample_split(image[0], points[0], gt_mask[0], batch_data['data_info'][0])
-        draw_sample_split(image[0], points[0], torch.from_numpy(gt_masks[0]), batch_data['data_info'][0])
         pdb.set_trace()
 
 
