@@ -1,5 +1,6 @@
 import sys
 
+import numpy as np
 import torch
 
 sys.path.insert(1, '.')
@@ -30,7 +31,7 @@ def collate_fn(values):
             res[k].append(v)
     res = {
         'images': torch.stack(res['images']),
-        'points': torch.stack(res['points']),
+        'points': torch.tensor(np.array(res['points'])),
         'instances': torch.stack(res['instances']),
         'data_info': res['data_info'],
     }
@@ -141,7 +142,8 @@ def train(model, model_cfg):
         num_workers=8,
         collate_fn=collate_fn,
     )
-    import pdb; pdb.set_trace()
+    import pdb;
+    pdb.set_trace()
     for batch_data in train_data:
         batch_data = {k: v.to(device) for k, v in batch_data.items()}
         image, gt_mask, points = batch_data['images'], batch_data['instances'], batch_data['points']
