@@ -8,6 +8,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import (build_activation_layer, build_conv_layer,
                       build_norm_layer, xavier_init)
+from mmcv.cnn.bricks.registry import (TRANSFORMER_LAYER,
+                                      TRANSFORMER_LAYER_SEQUENCE)
 from mmcv.cnn.bricks.transformer import (BaseTransformerLayer,
                                          TransformerLayerSequence,
                                          build_transformer_layer_sequence)
@@ -400,6 +402,7 @@ def inverse_sigmoid(x, eps=1e-5):
     return torch.log(x1 / x2)
 
 
+@TRANSFORMER_LAYER.register_module()
 class DetrTransformerDecoderLayer(BaseTransformerLayer):
     """Implements decoder layer in DETR transformer.
 
@@ -445,6 +448,7 @@ class DetrTransformerDecoderLayer(BaseTransformerLayer):
             ['self_attn', 'norm', 'cross_attn', 'ffn'])
 
 
+@TRANSFORMER_LAYER_SEQUENCE.register_module()
 class DetrTransformerEncoder(TransformerLayerSequence):
     """TransformerEncoder of DETR.
 
@@ -476,6 +480,7 @@ class DetrTransformerEncoder(TransformerLayerSequence):
         return x
 
 
+@TRANSFORMER_LAYER_SEQUENCE.register_module()
 class DetrTransformerDecoder(TransformerLayerSequence):
     """Implements the decoder in DETR transformer.
 
@@ -550,7 +555,7 @@ class Transformer(BaseModule):
             Defaults to None.
     """
 
-    def __init__(self, encoder=None, decoder=None, init_cfg=None):
+    def __init__(self, encoder=None, decoder=None, init_cfg=None, **kwargs):
         super(Transformer, self).__init__(init_cfg=init_cfg)
         self.encoder = build_transformer_layer_sequence(encoder)
         self.decoder = build_transformer_layer_sequence(decoder)
@@ -613,6 +618,7 @@ class Transformer(BaseModule):
         return out_dec, memory
 
 
+@TRANSFORMER_LAYER_SEQUENCE.register_module()
 class DeformableDetrTransformerDecoder(TransformerLayerSequence):
     """Implements the decoder in DETR transformer.
 
@@ -1084,7 +1090,8 @@ class DynamicConv(BaseModule):
                  with_proj=True,
                  act_cfg=dict(type='ReLU', inplace=True),
                  norm_cfg=dict(type='LN'),
-                 init_cfg=None):
+                 init_cfg=None,
+                 **kwargs):
         super(DynamicConv, self).__init__(init_cfg)
         self.in_channels = in_channels
         self.feat_channels = feat_channels
