@@ -37,6 +37,8 @@ TRAIN_CFG: dict = dict(
 
 
 def get_masks_by_points(points, data_info) -> np.ndarray:
+    if isinstance(points, torch.Tensor):
+        points = points.cpu().numpy()
     points_pos, points_neg = points.reshape((2, -1, 3)).astype(int)
     layers = data_info['mask']
     gt_mask = list()
@@ -173,12 +175,13 @@ def train(model, model_cfg):
     for batch_data in train_data:
         batch_data = {k: v.to(device) if isinstance(v, torch.Tensor) else v for k, v in batch_data.items()}
         image, gt_mask, points = batch_data['images'], batch_data['instances'], batch_data['points']
-        gt_masks = multi_apply(get_masks_by_points, batch_data['points'].cpu().numpy(), batch_data['data_info'])
+        gt_masks = multi_apply(get_masks_by_points, batch_data['points'], batch_data['data_info'])
         orig_image, orig_gt_mask, orig_points = image.clone(), gt_mask.clone(), points.clone()
         prev_output = torch.zeros_like(image, dtype=torch.float32)[:, :1, :, :]
         net_input = torch.cat((image, prev_output), dim=1)
         output = model(net_input, points)
-        import pdb; pdb.set_trace()
+        import pdb;
+        pdb.set_trace()
 
 
 if __name__ == '__main__':
