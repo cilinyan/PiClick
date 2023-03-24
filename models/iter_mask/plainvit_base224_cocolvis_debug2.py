@@ -2,6 +2,7 @@ import sys
 
 import numpy as np
 import torch
+import torch.nn as nn
 
 sys.path.insert(1, '.')
 
@@ -55,8 +56,8 @@ def get_targets(cls_scores_list, mask_preds_list, gt_labels_list,
 def _get_target_single(cls_score, mask_pred, gt_labels, gt_masks, img_metas):
     target_shape = mask_pred.shape[-2:]
     if gt_masks.shape[0] > 0:
-        gt_masks_downsampled = F.interpolate(gt_masks.unsqueeze(1).float(),
-                                             target_shape, mode='nearest').squeeze(1).long()
+        gt_masks_downsampled = nn.functional.interpolate(gt_masks.unsqueeze(1).float(),
+                                                         target_shape, mode='nearest').squeeze(1).long()
     else:
         gt_masks_downsampled = gt_masks
 
@@ -284,13 +285,13 @@ def train(model, model_cfg):
         net_input = torch.cat((image, prev_output), dim=1)
         output = model(net_input, points)
         draw_sample_split(image[0], points[0], gt_mask[0], batch_data['data_info'][0])
-        draw_sample_split_debug(image[5], points[5], gt_masks[5], batch_data['data_info'][5])
 
         gt_labels = [torch.tensor([0] * m.shape[0], dtype=torch.int).to(device) for m in gt_masks]
         gt_masks = [torch.tensor(g).to(device) for g in gt_masks]
         cls_scores_list, mask_preds_list = output['instances']
         img_metas = [None for _ in gt_masks]
-        labels_list, label_weights_list, mask_targets_list, mask_weights_list, num_total_pos, num_total_neg = get_targets(cls_scores_list, mask_preds_list, gt_labels, gt_masks, img_metas)
+        labels_list, label_weights_list, mask_targets_list, mask_weights_list, num_total_pos, num_total_neg = get_targets(
+            cls_scores_list, mask_preds_list, gt_labels, gt_masks, img_metas)
         pdb.set_trace()
 
 
