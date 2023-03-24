@@ -175,7 +175,7 @@ class MaskFormerHead(nn.Module):
 
     def forward(self, feats, ):
         batch_size, C, input_img_h, input_img_w = feats[0].shape
-        img_h, img_w = input_img_h * 4, input_img_w * 4
+        img_h, img_w = input_img_h, input_img_w
         padding_mask = feats[-1].new_ones((batch_size, input_img_h, input_img_w), dtype=torch.float32)
         for i in range(batch_size):
             padding_mask[i, :img_h, :img_w] = 0
