@@ -13,6 +13,7 @@ from isegm.utils.distributed import get_dp_wrapper, get_sampler, reduce_loss_dic
 from isegm.model.is_maskformer_model import MaskFormerModel
 
 from collections import defaultdict
+from loguru import logger
 
 MODEL_NAME = 'cocolvis_plainvit_base224'
 
@@ -89,7 +90,7 @@ def init_model():
 
     return model, model_cfg
 
-
+@logger.catch()
 def train(model, model_cfg):
     crop_size = model_cfg.crop_size
 
@@ -142,8 +143,7 @@ def train(model, model_cfg):
         num_workers=8,
         collate_fn=collate_fn,
     )
-    import pdb;
-    pdb.set_trace()
+    # import pdb; pdb.set_trace()
     for batch_data in train_data:
         batch_data = {k: v.to(device) if isinstance(v, torch.Tensor) else v for k, v in batch_data.items()}
         image, gt_mask, points = batch_data['images'], batch_data['instances'], batch_data['points']
