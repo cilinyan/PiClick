@@ -286,7 +286,7 @@ def train(model, model_cfg):
         output = model(net_input, points)
         draw_sample_split(image[0], points[0], gt_mask[0], batch_data['data_info'][0])
 
-        gt_labels = [torch.tensor([0] * m.shape[0], dtype=torch.int).to(device) for m in gt_masks]
+        gt_labels = [torch.tensor([0] * m.shape[0], dtype=torch.int).to(device).long() for m in gt_masks]
         gt_masks = [torch.tensor(g).to(device) for g in gt_masks]
         cls_scores_list, mask_preds_list = output['instances']
         img_metas = [None for _ in gt_masks]
