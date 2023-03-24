@@ -7,7 +7,7 @@ sys.path.insert(1, '.')
 
 from isegm.utils.exp_imports.default import *
 from isegm.model.losses import DETRLikeLoss
-from tools.visual import draw_sample
+from tools.visual import draw_sample, draw_masks, PALETTE
 from torch.utils.data import DataLoader
 from isegm.utils.distributed import get_dp_wrapper, get_sampler, reduce_loss_dict
 from isegm.model.is_maskformer_model import MaskFormerModel
@@ -15,7 +15,7 @@ from isegm.model.modeling.maskformer_helper.misc import multi_apply
 
 from collections import defaultdict
 from loguru import logger
-
+import pdb
 from copy import deepcopy
 
 MODEL_NAME = 'cocolvis_plainvit_base224'
@@ -34,6 +34,36 @@ TRAIN_CFG: dict = dict(
                   dice_cost=dict(type='DiceCost', weight=1.0, pred_act=True, eps=1.0)),
     sampler=dict(type='MaskPseudoSampler')
 )
+
+
+def draw_sample_split(image: torch.Tensor,
+                      points: torch.Tensor,
+                      mask: torch.Tensor,
+                      data_info: dict,
+                      out_path: str = '/data/clyan/1.jpg',
+                      ) -> np.ndarray:
+    image = image.cpu().numpy()
+    points = points.cpu().numpy()
+    img = np.array(image.permute((1, 2, 0)).cpu().numpy() * 255, dtype=np.uint8)
+    img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+    img = np.ascontiguousarray(img, dtype=np.uint8)
+
+    mask = mask.cpu().numpy()
+    mask = np.array(np.array(mask, dtype=int) == 1)
+
+    img = draw_masks(img, mask, np.array(list(reversed(PALETTE)), dtype=np.uint8), alpha=0.7)
+    points_pos, points_neg = points.reshape((2, -1, 3)).astype(int)
+    for y, x, tag in points_pos:  # red
+        if tag == -1: continue
+        img = cv2.circle(img, (x, y), radius=1, color=(0, 0, 255), thickness=-1)
+    for y, x, tag in points_neg:  # blue
+        if tag == -1: continue
+        img = cv2.circle(img, (x, y), radius=1, color=(255, 0, 0), thickness=-1)
+    h, w = data_info['ori_shape']
+    img = cv2.resize(img, (w, h))
+    if out_path is not None:
+        cv2.imwrite(out_path, img)
+    return img
 
 
 def get_masks_by_points(points, data_info) -> np.ndarray:
@@ -180,7 +210,8 @@ def train(model, model_cfg):
         prev_output = torch.zeros_like(image, dtype=torch.float32)[:, :1, :, :]
         net_input = torch.cat((image, prev_output), dim=1)
         output = model(net_input, points)
-        import pdb;
+        draw_sample_split(image[0], points[0], gt_mask[0], batch_data['data_info'][0])
+
         pdb.set_trace()
 
 
