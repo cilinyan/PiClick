@@ -35,6 +35,48 @@ TRAIN_CFG: dict = dict(
                   dice_cost=dict(type='DiceCost', weight=1.0, pred_act=True, eps=1.0)),
     sampler=dict(type='MaskPseudoSampler')
 )
+assigner = MaskHungarianAssigner(**TRAIN_CFG['assigner'])
+sampler = MaskPseudoSampler()
+
+
+def get_targets(cls_scores_list, mask_preds_list, gt_labels_list,
+                gt_masks_list, img_metas):
+    (labels_list, label_weights_list, mask_targets_list, mask_weights_list,
+     pos_inds_list,
+     neg_inds_list) = multi_apply(_get_target_single, cls_scores_list,
+                                  mask_preds_list, gt_labels_list,
+                                  gt_masks_list, img_metas)
+
+    num_total_pos = sum((inds.numel() for inds in pos_inds_list))
+    num_total_neg = sum((inds.numel() for inds in neg_inds_list))
+    return labels_list, label_weights_list, mask_targets_list, mask_weights_list, num_total_pos, num_total_neg
+
+
+def _get_target_single(cls_score, mask_pred, gt_labels, gt_masks, img_metas):
+    target_shape = mask_pred.shape[-2:]
+    if gt_masks.shape[0] > 0:
+        gt_masks_downsampled = F.interpolate(gt_masks.unsqueeze(1).float(),
+                                             target_shape, mode='nearest').squeeze(1).long()
+    else:
+        gt_masks_downsampled = gt_masks
+
+    # assign and sample
+    assign_result = assigner.assign(cls_score, mask_pred, gt_labels, gt_masks_downsampled, img_metas)
+    sampling_result = sampler.sample(assign_result, mask_pred, gt_masks)
+    pos_inds = sampling_result.pos_inds
+    neg_inds = sampling_result.neg_inds
+
+    # label target
+    labels = gt_labels.new_full((_PARAMS['num_queries'],), _PARAMS['num_classes'], dtype=torch.long)
+    labels[pos_inds] = gt_labels[sampling_result.pos_assigned_gt_inds]
+    label_weights = gt_labels.new_ones(_PARAMS['num_queries'])
+
+    # mask target
+    mask_targets = gt_masks[sampling_result.pos_assigned_gt_inds]
+    mask_weights = mask_pred.new_zeros((_PARAMS['num_queries'],))
+    mask_weights[pos_inds] = 1.0
+
+    return labels, label_weights, mask_targets, mask_weights, pos_inds, neg_inds
 
 
 def draw_sample_split(image: torch.Tensor,
@@ -232,8 +274,6 @@ def train(model, model_cfg):
         collate_fn=collate_fn,
     )
 
-    assigner = MaskHungarianAssigner(**TRAIN_CFG['assigner'])
-    sampler = MaskPseudoSampler()
     # import pdb; pdb.set_trace()
     for batch_data in train_data:
         batch_data = {k: v.to(device) if isinstance(v, torch.Tensor) else v for k, v in batch_data.items()}
@@ -245,6 +285,12 @@ def train(model, model_cfg):
         output = model(net_input, points)
         draw_sample_split(image[0], points[0], gt_mask[0], batch_data['data_info'][0])
         draw_sample_split_debug(image[5], points[5], gt_masks[5], batch_data['data_info'][5])
+
+        gt_labels = [torch.tensor([0] * m.shape[0], dtype=torch.int).to(device) for m in gt_masks]
+        gt_masks = [torch.tensor(g).to(device) for g in gt_masks]
+        cls_scores_list, mask_preds_list = output['instances']
+        img_metas = [None for _ in gt_masks]
+        labels_list, label_weights_list, mask_targets_list, mask_weights_list, num_total_pos, num_total_neg = get_targets(cls_scores_list, mask_preds_list, gt_labels, gt_masks, img_metas)
         pdb.set_trace()
 
 
