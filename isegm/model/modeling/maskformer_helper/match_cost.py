@@ -77,7 +77,8 @@ class FocalLossCost:
                  alpha=0.25,
                  gamma=2,
                  eps=1e-12,
-                 binary_input=False):
+                 binary_input=False,
+                 **kwargs):
         self.weight = weight
         self.alpha = alpha
         self.gamma = gamma
