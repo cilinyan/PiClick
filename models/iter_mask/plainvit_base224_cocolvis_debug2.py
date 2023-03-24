@@ -178,6 +178,7 @@ def train(model, model_cfg):
         prev_output = torch.zeros_like(image, dtype=torch.float32)[:, :1, :, :]
         net_input = torch.cat((image, prev_output), dim=1)
         output = model(net_input, points)
+        import pdb; pdb.set_trace()
 
 
 if __name__ == '__main__':
