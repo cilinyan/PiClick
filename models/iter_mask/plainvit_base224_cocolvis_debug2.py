@@ -145,7 +145,7 @@ def train(model, model_cfg):
     import pdb;
     pdb.set_trace()
     for batch_data in train_data:
-        batch_data = {k: v.to(device) for k, v in batch_data.items()}
+        batch_data = {k: v.to(device) if isinstance(v, torch.Tensor) else v for k, v in batch_data.items()}
         image, gt_mask, points = batch_data['images'], batch_data['instances'], batch_data['points']
         orig_image, orig_gt_mask, orig_points = image.clone(), gt_mask.clone(), points.clone()
         prev_output = torch.zeros_like(image, dtype=torch.float32)[:, :1, :, :]
