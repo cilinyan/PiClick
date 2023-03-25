@@ -492,7 +492,8 @@ class DETRLikeLoss(nn.Module):
 
         return loss, log_vars
 
-    def forward(self, outputs: Tuple, gt_masks: List[torch.tensor], img_metas=None):
+    def forward(self, outputs: Tuple, gt_masks: List[torch.tensor]):
+        img_metas = [dict() for _ in gt_masks]
         all_cls_scores, all_mask_preds = outputs
         device = gt_masks[0].device
         gt_labels = [
