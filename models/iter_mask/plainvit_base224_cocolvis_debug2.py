@@ -252,7 +252,8 @@ def train(model, model_cfg):
     for batch_data in train_data:
         batch_data = {k: v.to(device) if isinstance(v, torch.Tensor) else v for k, v in batch_data.items()}
         image, gt_mask, points = batch_data['images'], batch_data['instances'], batch_data['points']
-        gt_masks = [get_masks_by_points(p, i) for p, i in zip(batch_data['points'], batch_data['data_info'])]
+        gt_masks = \
+            [get_masks_by_points(p, i, g) for p, i, g in zip(batch_data['points'], batch_data['data_info'], gt_mask)]
         orig_image, orig_gt_mask, orig_points = image.clone(), gt_mask.clone(), points.clone()
         prev_output = torch.zeros_like(image, dtype=torch.float32)[:, :1, :, :]
         net_input = torch.cat((image, prev_output), dim=1)
