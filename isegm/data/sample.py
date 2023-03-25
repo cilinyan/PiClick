@@ -47,6 +47,8 @@ class DSample:
         self._soft_mask_aug = None
         self._original_data = self.image, self._encoded_masks, deepcopy(self._objects)
 
+        self.sample_object_ids = None
+
     def augment(self, augmentator):
         self.reset_augmentation()
         aug_output = augmentator(image=self.image, mask=self._encoded_masks)

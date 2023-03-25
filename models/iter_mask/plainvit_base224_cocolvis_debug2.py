@@ -106,12 +106,13 @@ def draw_sample_split(image: torch.Tensor,
         cv2.imwrite(out_path, img)
 
 
-def get_masks_by_points(points, data_info) -> np.ndarray:
+def get_masks_by_points(points, data_info, source_mask) -> np.ndarray:
     if isinstance(points, torch.Tensor):
         points = points.cpu().numpy()
     points_pos, points_neg = points.reshape((2, -1, 3)).astype(int)
     layers = data_info['mask']
     gt_mask = list()
+    gt_obj_ids = list()
     for obj_id, info in data_info['object'].items():
         layer_id, mask_id = info['mapping']
         mask = np.array(layers[:, :, layer_id] == mask_id)
@@ -119,6 +120,11 @@ def get_masks_by_points(points, data_info) -> np.ndarray:
         flag_neg = all((f == -1) or (not mask[x, y]) for x, y, f in points_neg)
         if flag_pos and flag_neg:
             gt_mask.append(np.array(deepcopy(mask), dtype=float))
+            gt_obj_ids.append(obj_id)
+    if (len(data_info['sample_object_ids']) > 1) or (data_info['sample_object_ids'][0] not in gt_obj_ids):
+        if isinstance(source_mask, torch.Tensor):
+            source_mask = source_mask.cpu().numpy()
+        gt_mask.append(source_mask)
     return np.array(gt_mask)
 
 

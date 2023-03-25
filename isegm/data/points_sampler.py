@@ -98,7 +98,8 @@ class MultiPointSampler(BasePointSampler):
         if len(root_obj_constrain) != 0:
             root_obj_ids = root_obj_constrain
 
-        if len(root_obj_ids) > 1 and random.random() < self.merge_objects_prob:
+        merge_flag = len(root_obj_ids) > 1 and random.random() < self.merge_objects_prob
+        if merge_flag:
             max_selected_objects = min(len(root_obj_ids), self.max_num_merged_objects)
             num_selected_objects = np.random.randint(2, max_selected_objects + 1)
             random_ids = random.sample(root_obj_ids, num_selected_objects)
@@ -117,6 +118,9 @@ class MultiPointSampler(BasePointSampler):
 
             pos_segments.extend(obj_pos_segments)
             neg_segments.extend(obj_neg_segments)
+
+        # 标记用于产生 gt masks 的 ids
+        self.sample_object_ids = random_ids
 
         # 腐蚀缩小 mask
         pos_masks = [self._positive_erode(x) for x in pos_segments]
