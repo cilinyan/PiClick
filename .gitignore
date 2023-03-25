@@ -139,3 +139,5 @@ debug/data/
 datasets/
 datasets
 weights
+.DS_Store
+.DS_Store/
