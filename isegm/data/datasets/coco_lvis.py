@@ -70,16 +70,27 @@ class CocoLvisDataset(ISDataset):
                 instances_info[inst_id] = inst_info
             inst_info['mapping'] = objs_mapping[inst_id]
 
-        if self.stuff_prob > 0 and random.random() < self.stuff_prob:
-            for inst_id in range(sample['num_instance_masks'], len(objs_mapping)):
-                instances_info[inst_id] = {
-                    'mapping': objs_mapping[inst_id],
-                    'parent': None,
-                    'children': []
-                }
-        else:
-            for inst_id in range(sample['num_instance_masks'], len(objs_mapping)):
-                layer_indx, mask_id = objs_mapping[inst_id]
-                layers[:, :, layer_indx][layers[:, :, layer_indx] == mask_id] = 0
+        # if self.stuff_prob > 0 and random.random() < self.stuff_prob:
+        #     for inst_id in range(sample['num_instance_masks'], len(objs_mapping)):
+        #         instances_info[inst_id] = {
+        #             'mapping': objs_mapping[inst_id],
+        #             'parent': None,
+        #             'children': []
+        #         }
+        # else:
+        #     for inst_id in range(sample['num_instance_masks'], len(objs_mapping)):
+        #         layer_indx, mask_id = objs_mapping[inst_id]
+        #         layers[:, :, layer_indx][layers[:, :, layer_indx] == mask_id] = 0
+
+        for inst_id in range(sample['num_instance_masks'], len(objs_mapping)):
+            instances_info[inst_id] = {
+                'mapping': objs_mapping[inst_id],
+                'parent': None,
+                'children': []
+            }
+
+        instances_info['image_id'] = image_id
+        instances_info['select_range'] = len(objs_mapping) \
+            if self.stuff_prob > 0 and random.random() < self.stuff_prob else sample['num_instance_masks']
 
         return DSample(image, layers, objects=instances_info)
