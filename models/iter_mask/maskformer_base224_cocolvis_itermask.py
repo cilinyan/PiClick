@@ -1,3 +1,7 @@
+"""
+python train.py models/iter_mask/maskformer_base224_cocolvis_itermask.py --batch-size=32 --ngpus=1
+"""
+
 import sys
 
 import numpy as np
