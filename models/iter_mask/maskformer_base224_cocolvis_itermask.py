@@ -52,9 +52,9 @@ def collate_fn(values):
     return res
 
 
-def main(*args, **kwargs):
+def main(cfg):
     model, model_cfg = init_model()
-    train(model, model_cfg)
+    train(model, cfg, model_cfg)
 
 
 def init_model():
@@ -104,11 +104,10 @@ def init_model():
     return model, model_cfg
 
 
-def train(model, model_cfg):
-    cfg = edict()
-    cfg.batch_size = 32
-    cfg.val_batch_size = cfg.batch_size
-    crop_size = model_cfg.crop_size
+def train(model, cfg, model_cfg):
+    model_cfg = edict()
+    model_cfg.crop_size = (224, 224)
+    model_cfg.num_max_points = 24
 
     loss_cfg = edict()
     loss_cfg.instance_loss = DETRLikeLoss(num_queries=_PARAMS['num_queries'], num_classes=_PARAMS['num_classes'])
