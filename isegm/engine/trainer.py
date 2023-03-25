@@ -402,8 +402,6 @@ class ISTrainer(object):
             loss = self.add_loss('instance_aux_loss', loss, losses_logging, validation,
                                  lambda: (output['instances_aux'], batch_data['instances']))
 
-            import pdb;
-            pdb.set_trace()
             if self.is_master:
                 with torch.no_grad():
                     for m in metrics:
