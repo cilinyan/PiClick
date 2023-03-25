@@ -440,8 +440,7 @@ class ISTrainer(object):
         instance_masks = splitted_batch_data['instances']
 
         gt_instance_masks = instance_masks.cpu().numpy()
-        import pdb;
-        pdb.set_trace()
+        mask_preds = select_max_score_mask(*outputs['instances'])
         predicted_instance_masks = torch.sigmoid(outputs['instances']).detach().cpu().numpy()
         points = points.detach().cpu().numpy()
 
