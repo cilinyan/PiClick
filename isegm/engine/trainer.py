@@ -355,9 +355,9 @@ class ISTrainer(object):
                     gt_masks = \
                         [get_masks_by_points(p, i, g) for p, i, g in
                          zip(batch_data['points'], batch_data['data_info'], gt_mask)]
-                    gt_labels = [torch.tensor([0] * m.shape[0], dtype=torch.int).to(self.device).long() for m in
-                                 gt_masks]
-                    gt_masks = [torch.tensor(g).to(self.device) for g in gt_masks]
+                    gt_labels = [torch.tensor([0] * m.shape[0], dtype=torch.int).to(self.device).long()
+                                 for m in gt_masks]
+                    gt_masks = [torch.tensor(g).long().to(self.device) for g in gt_masks]
                     cls_scores_list, mask_preds_list = output['instances']
                     img_metas = [dict() for _ in gt_masks]
                     labels_list, label_weights_list, mask_targets_list, mask_weights_list, num_total_pos, num_total_neg = \
