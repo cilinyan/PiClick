@@ -55,7 +55,7 @@ class ISDataset(torch.utils.data.dataset.Dataset):
             'images': self.to_tensor(sample.image),
             'points': points.astype(np.float32),
             'instances': mask,
-            'data_info': sample.data_info,
+            'data_info': data_info,
         }
 
         if self.with_image_info:
