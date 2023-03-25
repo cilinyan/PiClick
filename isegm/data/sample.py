@@ -3,12 +3,13 @@ from copy import deepcopy
 from isegm.utils.misc import get_labels_with_sizes
 from isegm.data.transforms import remove_image_only_transforms
 from albumentations import ReplayCompose
+import math
 
 
 class DSample:
     def __init__(self, image, encoded_masks, objects=None,
                  objects_ids=None, ignore_ids=None, sample_id=None,
-                 select_range=None, image_id=None):
+                 select_range=math.inf, image_id=None):
         self.select_range = select_range
         self.image_id = image_id
         self.image = image
@@ -116,7 +117,8 @@ class DSample:
 
     @property
     def root_objects(self):
-        return [obj_id for obj_id, obj_info in self._objects.items() if obj_info['parent'] is None]
+        return [obj_id for obj_id, obj_info in self._objects.items()
+                if obj_info['parent'] is None and int(obj_id) < self.select_range]
 
     def _compute_objects_areas(self):
         inverse_index = {node['mapping']: node_id for node_id, node in self._objects.items()}
