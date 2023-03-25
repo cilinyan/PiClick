@@ -270,6 +270,7 @@ def train(model, model_cfg):
         # i = 10; draw_sample_split(image[i], points[i], gt_masks[i], batch_data['data_info'][i])
         labels_list, label_weights_list, mask_targets_list, mask_weights_list, num_total_pos, num_total_neg = \
             get_targets(cls_scores_list[-1], mask_preds_list[-1], gt_labels, gt_masks, img_metas)
+        masks_choice = choice_mask(labels_list, mask_preds_list[-1])
         pdb.set_trace()
 
 
