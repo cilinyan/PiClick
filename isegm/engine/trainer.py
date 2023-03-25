@@ -22,6 +22,12 @@ from ..model.modeling.maskformer_helper.mask_hungarian_assigner import MaskHunga
 from ..model.modeling.maskformer_helper.mask_pseudo_sampler import MaskPseudoSampler
 from ..model.modeling.maskformer_helper.misc import multi_apply
 
+from collections import defaultdict
+from loguru import logger
+import pdb
+from copy import deepcopy
+from typing import Union
+
 TRAIN_CFG: dict = dict(
     assigner=dict(type='MaskHungarianAssigner',
                   cls_cost=dict(type='ClassificationCost', weight=1.0),
@@ -31,27 +37,33 @@ TRAIN_CFG: dict = dict(
 )
 
 
-def add_masks_by_points(sample: dict) -> dict:
-    """
-    根据当前的 points 生成对应的 gt masks
-    """
-    points_pos, points_neg = sample['points'].reshape((2, -1, 3)).astype(int)
-    layers = sample['data_info']['mask']
+def get_masks_by_points(points, data_info, source_mask) -> np.ndarray:
+    if isinstance(points, torch.Tensor):
+        points = points.cpu().numpy()
+    points_pos, points_neg = points.reshape((2, -1, 3)).astype(int)
+    layers = data_info['mask']
     gt_mask = list()
-    for obj_id, info in sample['data_info']['object'].items():
+    gt_obj_ids = list()
+    for obj_id, info in data_info['object'].items():
         layer_id, mask_id = info['mapping']
         mask = np.array(layers[:, :, layer_id] == mask_id)
         flag_pos = all((f == -1) or mask[x, y] for x, y, f in points_pos)
         flag_neg = all((f == -1) or (not mask[x, y]) for x, y, f in points_neg)
         if flag_pos and flag_neg:
             gt_mask.append(np.array(deepcopy(mask), dtype=float))
-    sample['gt_masks'] = np.array(gt_mask)
-    return sample
+            gt_obj_ids.append(obj_id)
+    if (len(data_info['sample_object_ids']) > 1) or (data_info['sample_object_ids'][0] not in gt_obj_ids):
+        if isinstance(source_mask, torch.Tensor):
+            source_mask = np.squeeze(source_mask.cpu().numpy(), axis=0)
+        gt_mask.append(source_mask)
+    return np.array(gt_mask)
 
 
 class ISTrainer(object):
     def __init__(self, model, cfg, model_cfg, loss_cfg,
                  trainset, valset,
+                 num_queries=7,
+                 num_classes=1,
                  optimizer='adam',
                  optimizer_params=None,
                  layerwise_decay=False,
@@ -68,6 +80,8 @@ class ISTrainer(object):
                  prev_mask_drop_prob=0.0,
                  multi_output: bool = False,
                  ):
+        self.num_queries = num_queries
+        self.num_classes = num_classes
         self.cfg = cfg
         self.model_cfg = model_cfg
         self.max_interactive_points = max_interactive_points
@@ -152,7 +166,7 @@ class ISTrainer(object):
         self.multi_output = multi_output
         if self.multi_output:
             self.assigner = MaskHungarianAssigner(**TRAIN_CFG['assigner'])
-            self.sampler = MaskPseudoSampler(context=self)
+            self.sampler = MaskPseudoSampler()
 
     def run(self, num_epochs, start_epoch=None, validation=True):
         if start_epoch is None:
@@ -282,13 +296,15 @@ class ISTrainer(object):
                                    global_step=epoch, disable_avg=True)
 
     def batch_forward(self, batch_data, validation=False):
-        # TODO 更多的是点击一次即可完成分割，所以可以在第一次分割里面增加一个点的概率
         metrics = self.val_metrics if validation else self.train_metrics
         losses_logging = dict()
 
         with torch.set_grad_enabled(not validation):
             batch_data = {k: v.to(self.device) for k, v in batch_data.items()}
             image, gt_mask, points = batch_data['images'], batch_data['instances'], batch_data['points']
+            gt_masks = \
+                [get_masks_by_points(p, i, g) for p, i, g in
+                 zip(batch_data['points'], batch_data['data_info'], gt_mask)]
             orig_image, orig_gt_mask, orig_points = image.clone(), gt_mask.clone(), points.clone()
 
             prev_output = torch.zeros_like(image, dtype=torch.float32)[:, :1, :, :]

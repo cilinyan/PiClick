@@ -1,3 +1,4 @@
+import random
 import sys
 
 import numpy as np
@@ -270,6 +271,16 @@ def train(model, model_cfg):
         labels_list, label_weights_list, mask_targets_list, mask_weights_list, num_total_pos, num_total_neg = \
             get_targets(cls_scores_list[-1], mask_preds_list[-1], gt_labels, gt_masks, img_metas)
         pdb.set_trace()
+
+
+def choice_mask(labels_list, mask_preds_list):
+    masks_choice = list()
+    for labels, mask_preds in zip(labels_list, mask_preds_list):
+        labels = labels.cpu().numpy()
+        indexes = [i for i, label in enumerate(labels) if label == 0]
+        idx = random.choice(indexes)
+        masks_choice.append(mask_preds[idx])
+    return torch.stack(masks_choice)
 
 
 if __name__ == '__main__':
