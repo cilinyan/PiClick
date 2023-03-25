@@ -37,6 +37,20 @@ TRAIN_CFG: dict = dict(
 )
 
 
+def collate_fn(values):
+    res = defaultdict(list)
+    for value in values:
+        for k, v in value.items():
+            res[k].append(v)
+    res = {
+        'images': torch.stack(res['images']),
+        'points': torch.tensor(np.array(res['points'])),
+        'instances': torch.tensor(np.array(res['instances'])),
+        'data_info': res['data_info'],
+    }
+    return res
+
+
 def choice_mask(labels_list, mask_preds_list):
     masks_choice = list()
     for labels, mask_preds in zip(labels_list, mask_preds_list):
@@ -130,14 +144,16 @@ class ISTrainer(object):
             trainset, cfg.batch_size,
             sampler=get_sampler(trainset, shuffle=True, distributed=cfg.distributed),
             drop_last=True, pin_memory=True,
-            num_workers=cfg.workers
+            num_workers=cfg.workers,
+            collate_fn=collate_fn,
         )
 
         self.val_data = DataLoader(
             valset, cfg.val_batch_size,
             sampler=get_sampler(valset, shuffle=False, distributed=cfg.distributed),
             drop_last=True, pin_memory=True,
-            num_workers=cfg.workers
+            num_workers=cfg.workers,
+            collate_fn=collate_fn,
         )
 
         if layerwise_decay:
