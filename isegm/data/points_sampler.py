@@ -1,9 +1,22 @@
 import cv2
 import math
-import random
-import numpy as np
 from functools import lru_cache
 from .sample import DSample
+import random
+import numpy as np
+
+
+def points_reduce(points: list, remain_one: bool, base_prob: float = 0.7):
+    points_available = [p for p in points if p[2] != -1]
+    num_available = len(points_available)
+    weights = [base_prob ** i for i in range(num_available + int(not remain_one))]
+    sum_weights = sum(weights)
+    weights = [w / sum_weights for w in weights]
+    num_choice = np.random.choice(
+        list(range(int(remain_one), num_available + 1)), size=1, replace=False, p=weights
+    )[0]
+    points_choices = random.choices(points_available, k=num_choice)
+    return points_choices + [(-1, -1, -1)] * (len(points) - len(points_choices))
 
 
 class BasePointSampler:
@@ -206,7 +219,10 @@ class MultiPointSampler(BasePointSampler):
         neg_points = self._multi_mask_sample_points(neg_masks,
                                                     is_negative=[False] * len(self._neg_masks['required']) + [True])
 
-        return pos_points + neg_points
+        points = points_reduce(pos_points, remain_one=True, base_prob=.7) + \
+                 points_reduce(neg_points, remain_one=False, base_prob=.7)
+
+        return points
 
     def _multi_mask_sample_points(self, selected_masks, is_negative, with_first_click=False):
         selected_masks = selected_masks[:self.max_num_points]
