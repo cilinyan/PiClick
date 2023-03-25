@@ -381,10 +381,20 @@ class ISTrainer(object):
             gt_masks = \
                 [get_masks_by_points(p, i, g) for p, i, g in
                  zip(batch_data['points'], batch_data['data_info'], gt_mask)]
+            gt_labels = [torch.tensor([0] * m.shape[0], dtype=torch.int).to(self.device).long()
+                         for m in gt_masks]
             gt_masks = [torch.tensor(g).long().to(self.device) for g in gt_masks]
 
             net_input = torch.cat((image, prev_output), dim=1) if self.net.with_prev_mask else image
             output = self.net(net_input, points)
+
+            cls_scores_list, mask_preds_list = output['instances']
+            img_metas = [dict() for _ in gt_masks]
+
+            labels_list, label_weights_list, mask_targets_list, mask_weights_list, num_total_pos, num_total_neg = \
+                self.get_targets(cls_scores_list[-1], mask_preds_list[-1], gt_labels, gt_masks, img_metas)
+            masks_choice = choice_mask(labels_list, mask_preds_list[-1])
+            output_convert = dict(instances=masks_choice)
 
             loss = 0.0
             loss = self.add_loss('instance_loss', loss, losses_logging, validation,
@@ -392,11 +402,12 @@ class ISTrainer(object):
             loss = self.add_loss('instance_aux_loss', loss, losses_logging, validation,
                                  lambda: (output['instances_aux'], batch_data['instances']))
 
-            import pdb; pdb.set_trace()
+            import pdb;
+            pdb.set_trace()
             if self.is_master:
                 with torch.no_grad():
                     for m in metrics:
-                        m.update(*(output.get(x) for x in m.pred_outputs),
+                        m.update(*(output_convert.get(x) for x in m.pred_outputs),
                                  *(batch_data[x] for x in m.gt_outputs))
         return loss, losses_logging, batch_data, output
 
