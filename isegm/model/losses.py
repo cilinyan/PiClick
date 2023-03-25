@@ -493,12 +493,30 @@ class DETRLikeLoss(nn.Module):
         return loss, log_vars
 
     def forward(self, outputs: Tuple, gt_masks: List[torch.tensor]):
+        """Loss function.
+
+        Args:
+            all_cls_scores (Tensor): Classification scores for all decoder
+                layers with shape (num_decoder, batch_size, num_queries,
+                cls_out_channels). Note `cls_out_channels` should includes
+                background.
+            all_mask_preds (Tensor): Mask scores for all decoder layers with
+                shape (num_decoder, batch_size, num_queries, h, w).
+            gt_labels_list (list[Tensor]): Ground truth class indices for each
+                image with shape (n, ). n is the sum of number of stuff type
+                and number of instance in a image.
+            gt_masks_list (list[Tensor]): Ground truth mask for each image with
+                shape (n, h, w).
+            img_metas (list[dict]): List of image meta information.
+
+        """
         img_metas = [dict() for _ in gt_masks]
         all_cls_scores, all_mask_preds = outputs
         device = gt_masks[0].device
         gt_labels = [
             torch.tensor([0] * m.shape[0], dtype=torch.int).to(device) for m in gt_masks
         ]
+        import pdb; pdb.set_trace()
         losses = self.loss(all_cls_scores, all_mask_preds, gt_labels, gt_masks, img_metas)
         loss, log_vars = self._parse_losses(losses)
         return loss
