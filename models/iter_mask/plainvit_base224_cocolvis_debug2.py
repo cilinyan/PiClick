@@ -42,11 +42,8 @@ sampler = MaskPseudoSampler()
 
 def get_targets(cls_scores_list, mask_preds_list, gt_labels_list,
                 gt_masks_list, img_metas):
-    (labels_list, label_weights_list, mask_targets_list, mask_weights_list,
-     pos_inds_list,
-     neg_inds_list) = multi_apply(_get_target_single, cls_scores_list,
-                                  mask_preds_list, gt_labels_list,
-                                  gt_masks_list, img_metas)
+    labels_list, label_weights_list, mask_targets_list, mask_weights_list, pos_inds_list, neg_inds_list = \
+        multi_apply(_get_target_single, cls_scores_list, mask_preds_list, gt_labels_list, gt_masks_list, img_metas)
 
     num_total_pos = sum((inds.numel() for inds in pos_inds_list))
     num_total_neg = sum((inds.numel() for inds in neg_inds_list))
@@ -290,8 +287,9 @@ def train(model, model_cfg):
         gt_masks = [torch.tensor(g).to(device) for g in gt_masks]
         cls_scores_list, mask_preds_list = output['instances']
         img_metas = [None for _ in gt_masks]
-        labels_list, label_weights_list, mask_targets_list, mask_weights_list, num_total_pos, num_total_neg = get_targets(
-            cls_scores_list[-1], mask_preds_list[-1], gt_labels, gt_masks, img_metas)
+        # [g.shape for g in gt_masks]
+        labels_list, label_weights_list, mask_targets_list, mask_weights_list, num_total_pos, num_total_neg = \
+            get_targets(cls_scores_list[-1], mask_preds_list[-1], gt_labels, gt_masks, img_metas)
         pdb.set_trace()
 
 
