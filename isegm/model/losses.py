@@ -514,9 +514,8 @@ class DETRLikeLoss(nn.Module):
         all_cls_scores, all_mask_preds = outputs
         device = gt_masks[0].device
         gt_labels = [
-            torch.tensor([0] * m.shape[0], dtype=torch.int).to(device) for m in gt_masks
+            torch.tensor([0] * m.shape[0], dtype=torch.int).long().to(device) for m in gt_masks
         ]
-        import pdb; pdb.set_trace()
         losses = self.loss(all_cls_scores, all_mask_preds, gt_labels, gt_masks, img_metas)
         loss, log_vars = self._parse_losses(losses)
         return loss
