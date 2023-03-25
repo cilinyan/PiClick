@@ -3,6 +3,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from typing import List, Tuple
+import torch.distributed as dist
+from collections import OrderedDict
 
 from isegm.utils import misc
 from .modeling.maskformer_helper import (cross_entropy_loss, dice_loss, focal_loss)
@@ -236,9 +238,8 @@ class DETRLikeLoss(nn.Module):
         all_gt_labels_list = [gt_labels_list for _ in range(num_dec_layers)]
         all_gt_masks_list = [gt_masks_list for _ in range(num_dec_layers)]
         img_metas_list = [img_metas for _ in range(num_dec_layers)]
-        losses_cls, losses_mask, losses_dice = multi_apply(
-            self.loss_single, all_cls_scores, all_mask_preds,
-            all_gt_labels_list, all_gt_masks_list, img_metas_list)
+        losses_cls, losses_mask, losses_dice = multi_apply(self.loss_single, all_cls_scores, all_mask_preds,
+                                                           all_gt_labels_list, all_gt_masks_list, img_metas_list)
 
         loss_dict = dict()
         # loss from the last decoder layer
@@ -446,6 +447,51 @@ class DETRLikeLoss(nn.Module):
 
         return (labels, label_weights, mask_targets, mask_weights, pos_inds, neg_inds)
 
+    def _parse_losses(self, losses):
+        """Parse the raw outputs (losses) of the network.
+
+        Args:
+            losses (dict): Raw output of the network, which usually contain
+                losses and other necessary information.
+
+        Returns:
+            tuple[Tensor, dict]: (loss, log_vars), loss is the loss tensor \
+                which may be a weighted sum of all losses, log_vars contains \
+                all the variables to be sent to the logger.
+        """
+        log_vars = OrderedDict()
+        for loss_name, loss_value in losses.items():
+            if isinstance(loss_value, torch.Tensor):
+                log_vars[loss_name] = loss_value.mean()
+            elif isinstance(loss_value, list):
+                log_vars[loss_name] = sum(_loss.mean() for _loss in loss_value)
+            else:
+                raise TypeError(
+                    f'{loss_name} is not a tensor or list of tensors')
+
+        loss = sum(_value for _key, _value in log_vars.items()
+                   if 'loss' in _key)
+
+        # If the loss_vars has different length, GPUs will wait infinitely
+        if dist.is_available() and dist.is_initialized():
+            log_var_length = torch.tensor(len(log_vars), device=loss.device)
+            dist.all_reduce(log_var_length)
+            message = (f'rank {dist.get_rank()}' +
+                       f' len(log_vars): {len(log_vars)}' + ' keys: ' +
+                       ','.join(log_vars.keys()))
+            assert log_var_length == len(log_vars) * dist.get_world_size(), \
+                'loss log variables are different across GPUs!\n' + message
+
+        log_vars['loss'] = loss
+        for loss_name, loss_value in log_vars.items():
+            # reduce loss when distributed training
+            if dist.is_available() and dist.is_initialized():
+                loss_value = loss_value.data.clone()
+                dist.all_reduce(loss_value.div_(dist.get_world_size()))
+            log_vars[loss_name] = loss_value.item()
+
+        return loss, log_vars
+
     def forward(self, outputs: Tuple, gt_masks: List[torch.tensor], img_metas=None):
         all_cls_scores, all_mask_preds = outputs
         device = gt_masks[0].device
@@ -453,4 +499,5 @@ class DETRLikeLoss(nn.Module):
             torch.tensor([0] * m.shape[0], dtype=torch.int).to(device) for m in gt_masks
         ]
         losses = self.loss(all_cls_scores, all_mask_preds, gt_labels, gt_masks, img_metas)
-        return losses['loss_cls'] + losses['loss_mask'] + losses['loss_dice']
+        loss, log_vars = self._parse_losses(losses)
+        return loss
