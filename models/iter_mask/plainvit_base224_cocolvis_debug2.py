@@ -291,7 +291,7 @@ def train(model, model_cfg):
         cls_scores_list, mask_preds_list = output['instances']
         img_metas = [None for _ in gt_masks]
         labels_list, label_weights_list, mask_targets_list, mask_weights_list, num_total_pos, num_total_neg = get_targets(
-            cls_scores_list, mask_preds_list, gt_labels, gt_masks, img_metas)
+            cls_scores_list[-1], mask_preds_list[-1], gt_labels, gt_masks, img_metas)
         pdb.set_trace()
 
 
