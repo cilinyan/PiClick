@@ -118,12 +118,7 @@ class DSample:
 
     @property
     def root_objects(self):
-        ori_id = [obj_id for obj_id, obj_info in self._objects.items() if obj_info['parent'] is None]
-        cur_id = [obj_id for obj_id, obj_info in self._objects.items()
-                  if obj_info['parent'] is None and int(obj_id) < self.select_range]
-        logger.info(f'ORI_ID: {ori_id}')
-        logger.info(f'CUR_IN: {cur_id}')
-        return ori_id
+        return [obj_id for obj_id, obj_info in self._objects.items() if obj_info['parent'] is None]
 
     def _compute_objects_areas(self):
         inverse_index = {node['mapping']: node_id for node_id, node in self._objects.items()}

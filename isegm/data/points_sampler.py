@@ -93,6 +93,10 @@ class MultiPointSampler(BasePointSampler):
     def _sample_mask(self, sample: DSample):
         root_obj_ids = sample.root_objects
 
+        root_obj_constrain = [i for i in root_obj_ids if i < sample.select_range]
+        if len(root_obj_constrain) != 0:
+            root_obj_ids = root_obj_constrain
+
         if len(root_obj_ids) > 1 and random.random() < self.merge_objects_prob:
             max_selected_objects = min(len(root_obj_ids), self.max_num_merged_objects)
             num_selected_objects = np.random.randint(2, max_selected_objects + 1)
