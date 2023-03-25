@@ -109,9 +109,9 @@ def init_model():
 
 
 def train(model, cfg, model_cfg):
-    model_cfg = edict()
-    model_cfg.crop_size = (224, 224)
-    model_cfg.num_max_points = 24
+    cfg.batch_size = 32 if cfg.batch_size < 1 else cfg.batch_size
+    cfg.val_batch_size = cfg.batch_size
+    crop_size = model_cfg.crop_size
 
     loss_cfg = edict()
     loss_cfg.instance_loss = DETRLikeLoss(num_queries=_PARAMS['num_queries'], num_classes=_PARAMS['num_classes'])
