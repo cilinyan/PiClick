@@ -81,38 +81,8 @@ def draw_sample_split(image: torch.Tensor,
                       points: torch.Tensor,
                       mask: Union[torch.Tensor, np.ndarray],
                       data_info: dict,
-                      out_path: str = '/data/clyan/1.jpg',
-                      ) -> np.ndarray:
-    points = points.cpu().numpy()
-    img = np.array(image.permute((1, 2, 0)).cpu().numpy() * 255, dtype=np.uint8)
-    img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-    img = np.ascontiguousarray(img, dtype=np.uint8)
-
-    if isinstance(mask, torch.Tensor):
-        mask = mask.cpu().numpy()
-    mask = np.array(np.array(mask, dtype=int) == 1)
-
-    img = draw_masks(img, mask, np.array(list(reversed(PALETTE)), dtype=np.uint8), alpha=0.7)
-    points_pos, points_neg = points.reshape((2, -1, 3)).astype(int)
-    for y, x, tag in points_pos:  # red
-        if tag == -1: continue
-        img = cv2.circle(img, (x, y), radius=1, color=(0, 0, 255), thickness=-1)
-    for y, x, tag in points_neg:  # blue
-        if tag == -1: continue
-        img = cv2.circle(img, (x, y), radius=1, color=(255, 0, 0), thickness=-1)
-    h, w = data_info['ori_shape']
-    img = cv2.resize(img, (w, h))
-    if out_path is not None:
-        cv2.imwrite(out_path, img)
-
-
-def draw_sample_split_debug(image: torch.Tensor,
-                            points: torch.Tensor,
-                            mask: Union[torch.Tensor, np.ndarray],
-                            data_info: dict,
-                            out_path: str = '/data/clyan/1.jpg',
-                            ) -> np.ndarray:
-    pdb.set_trace()
+                      out_path: str = 'debug/vis/points.jpg',
+                      ):
     points = points.cpu().numpy()
     img = np.array(image.permute((1, 2, 0)).cpu().numpy() * 255, dtype=np.uint8)
     img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
@@ -288,6 +258,8 @@ def train(model, model_cfg):
         cls_scores_list, mask_preds_list = output['instances']
         img_metas = [None for _ in gt_masks]
         # [g.shape for g in gt_masks]
+        # i = 1; draw_sample_split(image[i], points[i], gt_mask[i], batch_data['data_info'][i])
+        # i = 1; draw_sample_split(image[i], points[i], gt_masks[i], batch_data['data_info'][i])
         labels_list, label_weights_list, mask_targets_list, mask_weights_list, num_total_pos, num_total_neg = \
             get_targets(cls_scores_list[-1], mask_preds_list[-1], gt_labels, gt_masks, img_metas)
         pdb.set_trace()
