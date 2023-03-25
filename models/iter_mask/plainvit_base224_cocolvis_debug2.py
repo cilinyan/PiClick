@@ -258,8 +258,8 @@ def train(model, model_cfg):
         cls_scores_list, mask_preds_list = output['instances']
         img_metas = [None for _ in gt_masks]
         # [g.shape for g in gt_masks]
-        # i = 22; draw_sample_split(image[i], points[i], gt_mask[i], batch_data['data_info'][i])
-        # i = 22; draw_sample_split(image[i], points[i], gt_masks[i], batch_data['data_info'][i])
+        # i = 10; draw_sample_split(image[i], points[i], gt_mask[i], batch_data['data_info'][i])
+        # i = 10; draw_sample_split(image[i], points[i], gt_masks[i], batch_data['data_info'][i])
         labels_list, label_weights_list, mask_targets_list, mask_weights_list, num_total_pos, num_total_neg = \
             get_targets(cls_scores_list[-1], mask_preds_list[-1], gt_labels, gt_masks, img_metas)
         pdb.set_trace()
