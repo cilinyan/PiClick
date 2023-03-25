@@ -177,7 +177,7 @@ class DETRLikeLoss(nn.Module):
                      type='CrossEntropyLoss',
                      use_sigmoid=False,
                      loss_weight=1.0,
-                     class_weight=[1.0] * 133 + [0.1]),
+                     class_weight=[1.0] * 1 + [0.1]),
                  loss_mask: dict = dict(
                      type='FocalLoss',
                      use_sigmoid=True,
