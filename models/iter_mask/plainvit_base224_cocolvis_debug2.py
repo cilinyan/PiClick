@@ -123,7 +123,7 @@ def get_masks_by_points(points, data_info, source_mask) -> np.ndarray:
             gt_obj_ids.append(obj_id)
     if (len(data_info['sample_object_ids']) > 1) or (data_info['sample_object_ids'][0] not in gt_obj_ids):
         if isinstance(source_mask, torch.Tensor):
-            source_mask = source_mask.cpu().numpy()
+            source_mask = np.squeeze(source_mask.cpu().numpy(), axis=0)
         gt_mask.append(source_mask)
     return np.array(gt_mask)
 
