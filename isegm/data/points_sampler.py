@@ -93,6 +93,7 @@ class MultiPointSampler(BasePointSampler):
     def _sample_mask(self, sample: DSample):
         root_obj_ids = sample.root_objects
 
+        # 根据选择 select range 限制选中 id
         root_obj_constrain = [i for i in root_obj_ids if i < sample.select_range]
         if len(root_obj_constrain) != 0:
             root_obj_ids = root_obj_constrain
