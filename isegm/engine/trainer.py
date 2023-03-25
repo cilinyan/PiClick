@@ -37,6 +37,16 @@ TRAIN_CFG: dict = dict(
 )
 
 
+def choice_mask(labels_list, mask_preds_list):
+    masks_choice = list()
+    for labels, mask_preds in zip(labels_list, mask_preds_list):
+        labels = labels.cpu().numpy()
+        indexes = [i for i, label in enumerate(labels) if label == 0]
+        idx = random.choice(indexes)
+        masks_choice.append(mask_preds[idx:idx + 1])
+    return torch.stack(masks_choice)
+
+
 def get_masks_by_points(points, data_info, source_mask) -> np.ndarray:
     if isinstance(points, torch.Tensor):
         points = points.cpu().numpy()
@@ -302,9 +312,7 @@ class ISTrainer(object):
         with torch.set_grad_enabled(not validation):
             batch_data = {k: v.to(self.device) for k, v in batch_data.items()}
             image, gt_mask, points = batch_data['images'], batch_data['instances'], batch_data['points']
-            gt_masks = \
-                [get_masks_by_points(p, i, g) for p, i, g in
-                 zip(batch_data['points'], batch_data['data_info'], gt_mask)]
+
             orig_image, orig_gt_mask, orig_points = image.clone(), gt_mask.clone(), points.clone()
 
             prev_output = torch.zeros_like(image, dtype=torch.float32)[:, :1, :, :]
@@ -326,8 +334,21 @@ class ISTrainer(object):
                         eval_model = self.click_models[click_indx]
 
                     net_input = torch.cat((image, prev_output), dim=1) if self.net.with_prev_mask else image
-                    # TODO 输出多个 Mask, 设置策略选择其中一个作为 prev_output: score最大？ 与 gt_label 匹配上的 mask 中 score 最大
-                    prev_output = torch.sigmoid(eval_model(net_input, points)['instances'])
+                    output = eval_model(net_input, points)
+
+                    gt_masks = \
+                        [get_masks_by_points(p, i, g) for p, i, g in
+                         zip(batch_data['points'], batch_data['data_info'], gt_mask)]
+                    gt_labels = [torch.tensor([0] * m.shape[0], dtype=torch.int).to(self.device).long() for m in
+                                 gt_masks]
+                    gt_masks = [torch.tensor(g).to(self.device) for g in gt_masks]
+                    cls_scores_list, mask_preds_list = output['instances']
+                    img_metas = [dict() for _ in gt_masks]
+                    labels_list, label_weights_list, mask_targets_list, mask_weights_list, num_total_pos, num_total_neg = \
+                        self.get_targets(cls_scores_list[-1], mask_preds_list[-1], gt_labels, gt_masks, img_metas)
+                    masks_choice = choice_mask(labels_list, mask_preds_list[-1])
+
+                    prev_output = torch.sigmoid(masks_choice)
 
                     points = get_next_points(prev_output, orig_gt_mask, points, click_indx + 1)
 
@@ -341,13 +362,14 @@ class ISTrainer(object):
             batch_data['points'] = points
 
             # 根据当前点生成 gt masks
-            batch_data = add_masks_by_points(batch_data)
+            gt_masks = \
+                [get_masks_by_points(p, i, g) for p, i, g in
+                 zip(batch_data['points'], batch_data['data_info'], gt_mask)]
 
             net_input = torch.cat((image, prev_output), dim=1) if self.net.with_prev_mask else image
             output = self.net(net_input, points)
 
             loss = 0.0
-            # TODO 修改 loss, 在 models 里面可以看到, 只有 instance_loss 这个 loss
             loss = self.add_loss('instance_loss', loss, losses_logging, validation,
                                  lambda: (output['instances'], batch_data['instances']))
             loss = self.add_loss('instance_aux_loss', loss, losses_logging, validation,

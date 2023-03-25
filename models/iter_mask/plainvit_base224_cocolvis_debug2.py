@@ -280,7 +280,7 @@ def choice_mask(labels_list, mask_preds_list):
         labels = labels.cpu().numpy()
         indexes = [i for i, label in enumerate(labels) if label == 0]
         idx = random.choice(indexes)
-        masks_choice.append(mask_preds[idx])
+        masks_choice.append(mask_preds[idx:idx + 1])
     return torch.stack(masks_choice)
 
 
