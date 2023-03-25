@@ -50,6 +50,7 @@ class ISDataset(torch.utils.data.dataset.Dataset):
         data_info = deepcopy(sample.data_info)
         data_info['image_id'] = sample.image_id
         data_info['select_range'] = sample.select_range
+        data_info['sample_object_ids'] = sample.sample_object_ids
 
         output = {
             'images': self.to_tensor(sample.image),
