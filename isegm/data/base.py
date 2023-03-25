@@ -5,6 +5,7 @@ import torch
 from torchvision import transforms
 from .points_sampler import MultiPointSampler
 from .sample import DSample
+from copy import deepcopy
 
 
 class ISDataset(torch.utils.data.dataset.Dataset):
@@ -45,6 +46,10 @@ class ISDataset(torch.utils.data.dataset.Dataset):
         self.points_sampler.sample_object(sample)
         points = np.array(self.points_sampler.sample_points())
         mask = self.points_sampler.selected_mask
+
+        data_info = deepcopy(sample.data_info)
+        data_info['image_id'] = sample.image_id
+        data_info['select_range'] = sample.select_range
 
         output = {
             'images': self.to_tensor(sample.image),
