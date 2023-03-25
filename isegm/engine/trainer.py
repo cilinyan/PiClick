@@ -388,13 +388,12 @@ class ISTrainer(object):
             net_input = torch.cat((image, prev_output), dim=1) if self.net.with_prev_mask else image
             output = self.net(net_input, points)
 
-            cls_scores_list, mask_preds_list = output['instances']
-            img_metas = [dict() for _ in gt_masks]
-
-            labels_list, label_weights_list, mask_targets_list, mask_weights_list, num_total_pos, num_total_neg = \
-                self.get_targets(cls_scores_list[-1], mask_preds_list[-1], gt_labels, gt_masks, img_metas)
-            masks_choice = choice_mask(labels_list, mask_preds_list[-1])
-            output_convert = dict(instances=masks_choice)
+            # cls_scores_list, mask_preds_list = output['instances']
+            # img_metas = [dict() for _ in gt_masks]
+            # labels_list, label_weights_list, mask_targets_list, mask_weights_list, num_total_pos, num_total_neg = \
+            #     self.get_targets(cls_scores_list[-1], mask_preds_list[-1], gt_labels, gt_masks, img_metas)
+            # masks_choice = choice_mask(labels_list, mask_preds_list[-1])
+            output_convert = dict(instances=select_max_score_mask(*output['instances']))
 
             loss = 0.0
             loss = self.add_loss('instance_loss', loss, losses_logging, validation,
