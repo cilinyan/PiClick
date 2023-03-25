@@ -6,6 +6,7 @@ from torchvision import transforms
 from .points_sampler import MultiPointSampler
 from .sample import DSample
 from copy import deepcopy
+from loguru import logger
 
 
 class ISDataset(torch.utils.data.dataset.Dataset):
@@ -30,7 +31,7 @@ class ISDataset(torch.utils.data.dataset.Dataset):
 
         self.dataset_samples = None
 
-    def __getitem__(self, index):
+    def _get_item(self, index):
         if self.samples_precomputed_scores is not None:
             index = np.random.choice(self.samples_precomputed_scores['indices'],
                                      p=self.samples_precomputed_scores['probs'])
@@ -63,6 +64,13 @@ class ISDataset(torch.utils.data.dataset.Dataset):
             output['image_info'] = sample.sample_id
 
         return output
+
+    def __getitem__(self, index):
+        try:
+            return self._get_item(index)
+        except Exception as e:
+            logger.warning(f'fail to read {index}, with error: {e}')
+            return self.__getitem__(random.randrange(0, self.__len__()))
 
     def augment_sample(self, sample) -> DSample:
         if self.augmentator is None:
