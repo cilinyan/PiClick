@@ -441,7 +441,7 @@ class ISTrainer(object):
 
         gt_instance_masks = instance_masks.cpu().numpy()
         mask_preds = select_max_score_mask(*outputs['instances'])
-        predicted_instance_masks = torch.sigmoid(outputs['instances']).detach().cpu().numpy()
+        predicted_instance_masks = torch.sigmoid(mask_preds).detach().cpu().numpy()
         points = points.detach().cpu().numpy()
 
         image_blob, points = images[0], points[0]
@@ -631,5 +631,4 @@ def select_max_score_mask(cls_scores_list, mask_preds_list):
     for i, m in zip(indexes, mask_preds_list):
         max_scores_masks.append(m[i])
     max_scores_masks = torch.stack(max_scores_masks)
-    import pdb; pdb.set_trace()
     return max_scores_masks
