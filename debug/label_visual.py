@@ -185,7 +185,7 @@ def main():
     imgs = [deepcopy(img)] + \
            [draw_masks(deepcopy(img), masks_unsqueeze(l), np.array(PALETTE, dtype=np.uint8), alpha=0.8) for l in layers]
 
-    image_padding(imgs, ['original'] + [str(i) for i, _ in range(layers)])
+    image_padding(imgs, ['original'] + [str(i) for i, _ in enumerate(layers)])
 
     img_show = image_concat(imgs, 3)
 
