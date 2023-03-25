@@ -120,7 +120,7 @@ class MultiPointSampler(BasePointSampler):
             neg_segments.extend(obj_neg_segments)
 
         # 标记用于产生 gt masks 的 ids
-        self.sample_object_ids = random_ids
+        sample.sample_object_ids = random_ids
 
         # 腐蚀缩小 mask
         pos_masks = [self._positive_erode(x) for x in pos_segments]
