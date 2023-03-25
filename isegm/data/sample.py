@@ -7,7 +7,10 @@ from albumentations import ReplayCompose
 
 class DSample:
     def __init__(self, image, encoded_masks, objects=None,
-                 objects_ids=None, ignore_ids=None, sample_id=None):
+                 objects_ids=None, ignore_ids=None, sample_id=None,
+                 select_range=None, image_id=None):
+        self.select_range = select_range
+        self.image_id = image_id
         self.image = image
         self._ori_shape = image.shape[:2]
         self.sample_id = sample_id

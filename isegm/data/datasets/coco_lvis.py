@@ -89,8 +89,7 @@ class CocoLvisDataset(ISDataset):
                 'children': []
             }
 
-        # instances_info['image_id'] = image_id
-        # instances_info['select_range'] = len(objs_mapping) \
-        #     if self.stuff_prob > 0 and random.random() < self.stuff_prob else sample['num_instance_masks']
+        select_range = len(objs_mapping) \
+            if self.stuff_prob > 0 and random.random() < self.stuff_prob else sample['num_instance_masks']
 
-        return DSample(image, layers, objects=instances_info)
+        return DSample(image, layers, objects=instances_info, image_id=image_id, select_range=select_range)
