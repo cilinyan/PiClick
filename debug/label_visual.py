@@ -1,9 +1,12 @@
+import os
+import os.path as osp
 import pickle
 import math
 from typing import List, Tuple
 import numpy as np
 import cv2
 from copy import deepcopy
+import argparse
 
 PALETTE = [(220, 20, 60), (119, 11, 32), (0, 0, 142), (0, 0, 230),
            (106, 0, 228), (0, 60, 100), (0, 80, 100), (0, 0, 70),
@@ -148,10 +151,12 @@ def masks_select(mask: np.ndarray, selected: List[int]) -> np.ndarray:
 
 
 def main():
-    image_id = '000000581921'
-    img_path = f'data/{image_id}.jpg'
-    pkl_path = f'data/{image_id}.pickle'
-    ann_path = 'data/hannotation.pickle'
+    args = get_args()
+    os.makedirs(args.out, exist_ok=True)
+    image_id = args.id
+    img_path = osp.join(args.root, 'images', f'{image_id}.jpg')
+    pkl_path = osp.join(args.root, 'masks', f'{image_id}.pickle')
+    ann_path = osp.join(args.root, 'hannotation.pickle')
 
     img = cv2.imread(img_path)
     with open(ann_path, 'rb') as f:
@@ -177,16 +182,14 @@ def main():
             'children': []
         }
 
-    imgs = [
-        deepcopy(img),
-        draw_masks(deepcopy(img), masks_unsqueeze(layers[0]), np.array(PALETTE, dtype=np.uint8), alpha=0.8),
-        draw_masks(deepcopy(img), masks_unsqueeze(layers[1]), np.array(PALETTE, dtype=np.uint8), alpha=0.8),
-        draw_masks(deepcopy(img), masks_unsqueeze(layers[2]), np.array(PALETTE, dtype=np.uint8), alpha=0.8)
-    ]
+    imgs = [deepcopy(img)] + \
+           [draw_masks(deepcopy(img), masks_unsqueeze(l), np.array(PALETTE, dtype=np.uint8), alpha=0.8) for l in layers]
 
-    image_padding(imgs, ['original', '0', '1', '2'])
+    image_padding(imgs, ['original'] + [str(i) for i, _ in range(layers)])
 
-    img_show = image_concat(imgs, 2)
+    img_show = image_concat(imgs, 3)
+
+    cv2.imwrite(osp.join(args.out, 'all.jpg'), img_show)
 
     img_ins = list()
     cap_ins = list()
@@ -200,8 +203,15 @@ def main():
     image_padding(img_ins, cap_ins)
     img_ins = image_concat(img_ins, 3)
 
-    cv2.imshow('1', img_ins)
-    cv2.waitKey()
+    cv2.imwrite(osp.join(args.out, 'split.jpg'), img_ins)
+
+
+def get_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('id', type=str)
+    parser.add_argument('--root', type=str, default='datasets/LVIS/train')
+    parser.add_argument('--out', type=str, default='debug/vis/')
+    return parser.parse_args()
 
 
 if __name__ == '__main__':
