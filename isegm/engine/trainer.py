@@ -440,7 +440,8 @@ class ISTrainer(object):
         instance_masks = splitted_batch_data['instances']
 
         gt_instance_masks = instance_masks.cpu().numpy()
-        import pdb; pdb.set_trace()
+        import pdb;
+        pdb.set_trace()
         predicted_instance_masks = torch.sigmoid(outputs['instances']).detach().cpu().numpy()
         points = points.detach().cpu().numpy()
 
@@ -621,3 +622,15 @@ def load_weights(model, path_to_weights):
     new_state_dict = torch.load(path_to_weights, map_location='cpu')['state_dict']
     current_state_dict.update(new_state_dict)
     model.load_state_dict(current_state_dict)
+
+
+def select_max_score_mask(cls_scores_list, mask_preds_list):
+    cls_scores_list = cls_scores_list[-1]
+    mask_preds_list = mask_preds_list[-1]
+    indexes = torch.argmax(cls_scores_list.softmax(dim=-1)[:, :, 0], dim=-1)
+    max_scores_masks = list()
+    for i, m in zip(indexes, mask_preds_list):
+        max_scores_masks.append(m[i])
+    max_scores_masks = torch.stack(max_scores_masks)
+    import pdb; pdb.set_trace()
+    return max_scores_masks
