@@ -445,8 +445,8 @@ class ISTrainer(object):
         points = points.detach().cpu().numpy()
 
         image_blob, points = images[0], points[0]
-        gt_mask = gt_instance_masks[0]
-        predicted_mask = np.squeeze(predicted_instance_masks[0], axis=0)
+        gt_mask = np.squeeze(gt_instance_masks[0], axis=0)
+        predicted_mask = predicted_instance_masks[0]
 
         image = image_blob.cpu().numpy() * 255
         image = image.transpose((1, 2, 0))
