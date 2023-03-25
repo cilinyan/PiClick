@@ -381,13 +381,14 @@ class ISTrainer(object):
             gt_masks = \
                 [get_masks_by_points(p, i, g) for p, i, g in
                  zip(batch_data['points'], batch_data['data_info'], gt_mask)]
+            gt_masks = [torch.tensor(g).long().to(self.device) for g in gt_masks]
 
             net_input = torch.cat((image, prev_output), dim=1) if self.net.with_prev_mask else image
             output = self.net(net_input, points)
 
             loss = 0.0
             loss = self.add_loss('instance_loss', loss, losses_logging, validation,
-                                 lambda: (output['instances'], batch_data['instances']))
+                                 lambda: (output['instances'], gt_masks))
             loss = self.add_loss('instance_aux_loss', loss, losses_logging, validation,
                                  lambda: (output['instances_aux'], batch_data['instances']))
 
