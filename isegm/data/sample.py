@@ -4,6 +4,7 @@ from isegm.utils.misc import get_labels_with_sizes
 from isegm.data.transforms import remove_image_only_transforms
 from albumentations import ReplayCompose
 import math
+from loguru import logger
 
 
 class DSample:
@@ -117,8 +118,12 @@ class DSample:
 
     @property
     def root_objects(self):
-        return [obj_id for obj_id, obj_info in self._objects.items()
-                if obj_info['parent'] is None and int(obj_id) < self.select_range]
+        ori_id = [obj_id for obj_id, obj_info in self._objects.items() if obj_info['parent'] is None]
+        cur_id = [obj_id for obj_id, obj_info in self._objects.items()
+                  if obj_info['parent'] is None and int(obj_id) < self.select_range]
+        logger.info(f'ORI_ID: {ori_id}')
+        logger.info(f'CUR_IN: {cur_id}')
+        return ori_id
 
     def _compute_objects_areas(self):
         inverse_index = {node['mapping']: node_id for node_id, node in self._objects.items()}
