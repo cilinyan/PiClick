@@ -446,7 +446,7 @@ class ISTrainer(object):
 
         image_blob, points = images[0], points[0]
         gt_mask = np.squeeze(gt_instance_masks[0], axis=0)
-        predicted_mask = predicted_instance_masks[0]
+        predicted_mask = np.squeeze(predicted_instance_masks[0], axis=0)
 
         image = image_blob.cpu().numpy() * 255
         image = image.transpose((1, 2, 0))
@@ -629,6 +629,6 @@ def select_max_score_mask(cls_scores_list, mask_preds_list):
     indexes = torch.argmax(cls_scores_list.softmax(dim=-1)[:, :, 0], dim=-1)
     max_scores_masks = list()
     for i, m in zip(indexes, mask_preds_list):
-        max_scores_masks.append(m[i])
+        max_scores_masks.append(m[i:i + 1])
     max_scores_masks = torch.stack(max_scores_masks)
     return max_scores_masks
