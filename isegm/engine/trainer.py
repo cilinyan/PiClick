@@ -378,6 +378,8 @@ class ISTrainer(object):
 
             batch_data['points'] = points
 
+            print('1' * 10)
+
             # 根据当前点生成 gt masks
             gt_masks = \
                 [torch.tensor(get_masks_by_points(p, i, g)).long().to(self.device) for p, i, g in
