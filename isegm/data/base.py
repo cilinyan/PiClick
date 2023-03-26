@@ -66,6 +66,7 @@ class ISDataset(torch.utils.data.dataset.Dataset):
         return output
 
     def __getitem__(self, index):
+        index = index % self.__len__()
         try:
             return self._get_item(index)
         except Exception as e:
