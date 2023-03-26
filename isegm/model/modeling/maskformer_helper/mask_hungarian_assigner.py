@@ -52,9 +52,9 @@ class MaskHungarianAssigner(BaseAssigner):
                mask_pred,
                gt_labels,
                gt_mask,
-               img_meta,
                gt_bboxes_ignore=None,
-               eps=1e-7):
+               eps=1e-7,
+               **kwargs):
         """Computes one-to-one matching based on the weighted costs.
 
         Args:

@@ -214,7 +214,7 @@ class DETRLikeLoss(nn.Module):
         assert train_cfg['sampler']['type'] == 'MaskPseudoSampler'
         self.sampler = MaskPseudoSampler(context=self)
 
-    def loss(self, all_cls_scores, all_mask_preds, gt_labels_list, gt_masks_list, img_metas):
+    def loss(self, all_cls_scores, all_mask_preds, gt_labels_list, gt_masks_list):
         """Loss function.
 
         Args:
@@ -237,9 +237,8 @@ class DETRLikeLoss(nn.Module):
         num_dec_layers = len(all_cls_scores)
         all_gt_labels_list = [gt_labels_list for _ in range(num_dec_layers)]
         all_gt_masks_list = [gt_masks_list for _ in range(num_dec_layers)]
-        img_metas_list = [img_metas for _ in range(num_dec_layers)]
         losses_cls, losses_mask, losses_dice = multi_apply(self.loss_single, all_cls_scores, all_mask_preds,
-                                                           all_gt_labels_list, all_gt_masks_list, img_metas_list)
+                                                           all_gt_labels_list, all_gt_masks_list)
 
         loss_dict = dict()
         # loss from the last decoder layer
@@ -255,7 +254,7 @@ class DETRLikeLoss(nn.Module):
             num_dec_layer += 1
         return loss_dict
 
-    def loss_single(self, cls_scores, mask_preds, gt_labels_list, gt_masks_list, img_metas):
+    def loss_single(self, cls_scores, mask_preds, gt_labels_list, gt_masks_list):
         """Loss function for outputs from a single decoder layer.
 
         Args:
@@ -280,11 +279,8 @@ class DETRLikeLoss(nn.Module):
         cls_scores_list = [cls_scores[i] for i in range(num_imgs)]
         mask_preds_list = [mask_preds[i] for i in range(num_imgs)]
 
-        (labels_list, label_weights_list, mask_targets_list, mask_weights_list,
-         num_total_pos,
-         num_total_neg) = self.get_targets(cls_scores_list, mask_preds_list,
-                                           gt_labels_list, gt_masks_list,
-                                           img_metas)
+        labels_list, label_weights_list, mask_targets_list, mask_weights_list, num_total_pos, num_total_neg = \
+            self.get_targets(cls_scores_list, mask_preds_list, gt_labels_list, gt_masks_list)
         # shape (batch_size, num_queries)
         labels = torch.stack(labels_list, dim=0)
         # shape (batch_size, num_queries)
@@ -301,11 +297,7 @@ class DETRLikeLoss(nn.Module):
         label_weights = label_weights.flatten(0, 1)
 
         class_weight = cls_scores.new_tensor(self.class_weight)
-        loss_cls = self.loss_cls(
-            cls_scores,
-            labels,
-            label_weights,
-            avg_factor=class_weight[labels].sum())
+        loss_cls = self.loss_cls(cls_scores, labels, label_weights, avg_factor=class_weight[labels].sum())
 
         num_total_masks = reduce_mean(cls_scores.new_tensor([num_total_pos]))
         num_total_masks = max(num_total_masks, 1)
@@ -323,15 +315,11 @@ class DETRLikeLoss(nn.Module):
 
         # upsample to shape of target
         # shape (num_total_gts, h, w)
-        mask_preds = F.interpolate(
-            mask_preds.unsqueeze(1),
-            target_shape,
-            mode='bilinear',
-            align_corners=False).squeeze(1)
+        mask_preds = \
+            F.interpolate(mask_preds.unsqueeze(1), target_shape, mode='bilinear', align_corners=False).squeeze(1)
 
         # dice loss
-        loss_dice = self.loss_dice(
-            mask_preds, mask_targets, avg_factor=num_total_masks)
+        loss_dice = self.loss_dice(mask_preds, mask_targets, avg_factor=num_total_masks)
 
         # mask loss
         # FocalLoss support input of shape (n, num_class)
@@ -341,13 +329,11 @@ class DETRLikeLoss(nn.Module):
         # shape (num_total_gts, h, w) -> (num_total_gts * h * w)
         mask_targets = mask_targets.reshape(-1)
         # target is (1 - mask_targets) !!!
-        loss_mask = self.loss_mask(
-            mask_preds, 1 - mask_targets, avg_factor=num_total_masks * h * w)
+        loss_mask = self.loss_mask(mask_preds, 1 - mask_targets, avg_factor=num_total_masks * h * w)
 
         return loss_cls, loss_mask, loss_dice
 
-    def get_targets(self, cls_scores_list, mask_preds_list, gt_labels_list,
-                    gt_masks_list, img_metas):
+    def get_targets(self, cls_scores_list, mask_preds_list, gt_labels_list, gt_masks_list):
         """Compute classification and mask targets for all images for a decoder layer.
 
         Args:
@@ -378,18 +364,15 @@ class DETRLikeLoss(nn.Module):
                 - num_total_neg (int): Number of negative samples in\
                     all images.
         """
-        (labels_list, label_weights_list, mask_targets_list, mask_weights_list,
-         pos_inds_list,
-         neg_inds_list) = multi_apply(self._get_target_single, cls_scores_list,
-                                      mask_preds_list, gt_labels_list,
-                                      gt_masks_list, img_metas)
+        labels_list, label_weights_list, mask_targets_list, mask_weights_list, pos_inds_list, neg_inds_list = \
+            multi_apply(self._get_target_single, cls_scores_list, mask_preds_list, gt_labels_list, gt_masks_list)
 
         num_total_pos = sum((inds.numel() for inds in pos_inds_list))
         num_total_neg = sum((inds.numel() for inds in neg_inds_list))
         return (labels_list, label_weights_list, mask_targets_list,
                 mask_weights_list, num_total_pos, num_total_neg)
 
-    def _get_target_single(self, cls_score, mask_pred, gt_labels, gt_masks, img_metas):
+    def _get_target_single(self, cls_score, mask_pred, gt_labels, gt_masks):
         """Compute classification and mask targets for one image.
 
         Args:
@@ -402,7 +385,6 @@ class DETRLikeLoss(nn.Module):
                 of instance in a image.
             gt_masks (Tensor): Ground truth mask for each image, each with
                 shape (n, h, w).
-            img_metas (dict): Image informtation.
 
         Returns:
             tuple[Tensor]: a tuple containing the following for one image.
@@ -419,24 +401,19 @@ class DETRLikeLoss(nn.Module):
         """
         target_shape = mask_pred.shape[-2:]
         if gt_masks.shape[0] > 0:
-            gt_masks_downsampled = F.interpolate(
-                gt_masks.unsqueeze(1).float(), target_shape,
-                mode='nearest').squeeze(1).long()
+            gt_masks_downsampled = \
+                F.interpolate(gt_masks.unsqueeze(1).float(), target_shape, mode='nearest').squeeze(1).long()
         else:
             gt_masks_downsampled = gt_masks
 
         # assign and sample
-        assign_result = self.assigner.assign(cls_score, mask_pred, gt_labels,
-                                             gt_masks_downsampled, img_metas)
-        sampling_result = self.sampler.sample(assign_result, mask_pred,
-                                              gt_masks)
+        assign_result = self.assigner.assign(cls_score, mask_pred, gt_labels, gt_masks_downsampled)
+        sampling_result = self.sampler.sample(assign_result, mask_pred, gt_masks)
         pos_inds = sampling_result.pos_inds
         neg_inds = sampling_result.neg_inds
 
         # label target
-        labels = gt_labels.new_full((self.num_queries,),
-                                    self.num_classes,
-                                    dtype=torch.long)
+        labels = gt_labels.new_full((self.num_queries,), self.num_classes, dtype=torch.long)
         labels[pos_inds] = gt_labels[sampling_result.pos_assigned_gt_inds]
         label_weights = gt_labels.new_ones(self.num_queries)
 
@@ -445,7 +422,7 @@ class DETRLikeLoss(nn.Module):
         mask_weights = mask_pred.new_zeros((self.num_queries,))
         mask_weights[pos_inds] = 1.0
 
-        return (labels, label_weights, mask_targets, mask_weights, pos_inds, neg_inds)
+        return labels, label_weights, mask_targets, mask_weights, pos_inds, neg_inds
 
     def _parse_losses(self, losses):
         """Parse the raw outputs (losses) of the network.
@@ -469,8 +446,7 @@ class DETRLikeLoss(nn.Module):
                 raise TypeError(
                     f'{loss_name} is not a tensor or list of tensors')
 
-        loss = sum(_value for _key, _value in log_vars.items()
-                   if 'loss' in _key)
+        loss = sum(_value for _key, _value in log_vars.items() if 'loss' in _key)
 
         # If the loss_vars has different length, GPUs will wait infinitely
         if dist.is_available() and dist.is_initialized():
@@ -510,12 +486,11 @@ class DETRLikeLoss(nn.Module):
             img_metas (list[dict]): List of image meta information.
 
         """
-        img_metas = [dict() for _ in gt_masks]
         all_cls_scores, all_mask_preds = outputs
         device = gt_masks[0].device
         gt_labels = [
             torch.tensor([0] * m.shape[0], dtype=torch.int).long().to(device) for m in gt_masks
         ]
-        losses = self.loss(all_cls_scores, all_mask_preds, gt_labels, gt_masks, img_metas)
+        losses = self.loss(all_cls_scores, all_mask_preds, gt_labels, gt_masks)
         loss, log_vars = self._parse_losses(losses)
         return loss

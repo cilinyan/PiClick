@@ -17,8 +17,8 @@ from isegm.model.modeling.pos_embed import interpolate_pos_embed_inference
 
 r"""
 python scripts/evaluate_model.py NoBRS \
-    --gpu=1 \
-    --checkpoint=./weights/models/iter_mask/cocolvis_plainvit_base224/036/checkpoints/035.pth \
+    --gpu=2 \
+    --checkpoint=./weights/models/iter_mask/cocolvis_plainvit_base224/036/checkpoints/last_checkpoint.pth \
     --eval-mode=cvpr \
     --datasets=GrabCut,Berkeley,DAVIS,PascalVOC,SBD,COCO_MVal,ssTEM,BraTS,OAIZIB
 """
