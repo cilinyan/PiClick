@@ -1,8 +1,6 @@
 import os
 import random
 import logging
-from copy import deepcopy
-from collections import defaultdict
 
 import cv2
 import torch
@@ -27,6 +25,10 @@ from loguru import logger
 import pdb
 from copy import deepcopy
 from typing import Union
+import sys
+
+logger.remove()
+logger.add(sys.stderr, level="INFO")
 
 TRAIN_CFG: dict = dict(
     assigner=dict(type='MaskHungarianAssigner',
