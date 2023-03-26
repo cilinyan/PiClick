@@ -7,6 +7,7 @@ from .points_sampler import MultiPointSampler
 from .sample import DSample
 from copy import deepcopy
 from loguru import logger
+import math
 
 
 class ISDataset(torch.utils.data.dataset.Dataset):
@@ -66,12 +67,12 @@ class ISDataset(torch.utils.data.dataset.Dataset):
         return output
 
     def __getitem__(self, index):
-        index = index % self.__len__()
+        index = index % self.actual_len
         try:
             return self._get_item(index)
         except Exception as e:
             logger.warning(f'fail to read {index}, with error: {e}')
-            return self.__getitem__(random.randrange(0, self.__len__()))
+            return self.__getitem__(random.randrange(0, self.actual_len))
 
     def augment_sample(self, sample) -> DSample:
         if self.augmentator is None:
@@ -89,11 +90,15 @@ class ISDataset(torch.utils.data.dataset.Dataset):
     def get_sample(self, index) -> DSample:
         raise NotImplementedError
 
-    def __len__(self):
+    @property
+    def actual_len(self):
         if self.epoch_len > 0:
             return self.epoch_len
         else:
             return self.get_samples_number()
+
+    def __len__(self):
+        return math.ceil(self.actual_len / 8)
 
     def get_samples_number(self):
         return len(self.dataset_samples)
