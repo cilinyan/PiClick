@@ -326,9 +326,8 @@ class ISTrainer(object):
         gt_labels = [torch.tensor([0] * m.shape[0], dtype=torch.int).to(self.device).long() for m in gt_masks]
         gt_masks = [torch.tensor(g).long().to(self.device) for g in gt_masks]
         cls_scores_list, mask_preds_list = output['instances']
-        img_metas = [dict() for _ in gt_masks]
         labels_list, label_weights_list, mask_targets_list, mask_weights_list, num_total_pos, num_total_neg = \
-            self.get_targets(cls_scores_list[-1], mask_preds_list[-1], gt_labels, gt_masks, img_metas)
+            self.get_targets(cls_scores_list[-1], mask_preds_list[-1], gt_labels, gt_masks)
         return labels_list, label_weights_list, mask_targets_list, mask_weights_list, num_total_pos, num_total_neg
 
     def batch_forward(self, batch_data, validation=False):
