@@ -370,11 +370,21 @@ class ISTrainer(object):
                     net_input = torch.cat((image, prev_output), dim=1) if self.net.with_prev_mask else image
                     output = eval_model(net_input, points)
 
+                    print('net_input:   {}'.format(net_input.shape))
+                    print('output:      {}'.format(len(output)))
+
                     labels_list, label_weights_list, mask_targets_list, mask_weights_list, num_total_pos, num_total_neg = \
                         self.mask_match(batch_data, gt_mask, output)
                     masks_choice = choice_mask(labels_list, output['instances'][1][-1])
 
+                    print('labels_list: {}'.format(len(labels_list)))
+                    print('masks_choice:{}'.format(masks_choice.shape))
+
                     prev_output = torch.sigmoid(masks_choice)
+
+                    print('prev_output: {}'.format(prev_output.shape))
+                    print('points:      {}'.format(points.shape))
+                    print('orig_gt_mask:{}'.format(orig_gt_mask.shape))
 
                     points = get_next_points(prev_output, orig_gt_mask, points, click_indx + 1)
 
