@@ -333,6 +333,8 @@ class ISTrainer(object):
     def batch_forward(self, batch_data, validation=False):
         metrics = self.val_metrics if validation else self.train_metrics
         losses_logging = dict()
+        
+        print('F: {}, BS: {}'.format(torch.distributed.get_rank(), batch_data['images'].shape[0]))
 
         with torch.set_grad_enabled(not validation):
             batch_data = {k: v.to(self.device) if isinstance(v, torch.Tensor) else v for k, v in batch_data.items()}
@@ -378,7 +380,6 @@ class ISTrainer(object):
 
             batch_data['points'] = points
 
-
             # 根据当前点生成 gt masks
             gt_masks = \
                 [torch.tensor(get_masks_by_points(p, i, g)).long().to(self.device) for p, i, g in
@@ -386,7 +387,6 @@ class ISTrainer(object):
 
             net_input = torch.cat((image, prev_output), dim=1) if self.net.with_prev_mask else image
             output = self.net(net_input, points, train_mode=True)
-
 
             print('1' * 10)
 
