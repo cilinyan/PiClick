@@ -94,8 +94,7 @@ def compute_noc_metric(all_ious, iou_thrs, max_clicks=20):
     noc_list_std = []
     over_max_list = []
     for iou_thr in iou_thrs:
-        scores_arr = np.array([_get_noc(iou_arr, iou_thr)
-                               for iou_arr in all_ious], dtype=np.int)
+        scores_arr = np.array([_get_noc(iou_arr, iou_thr) for iou_arr in all_ious], dtype=int)
 
         score = scores_arr.mean()
         score_std = scores_arr.std()
@@ -135,7 +134,7 @@ def get_results_table(noc_list, over_max_list, brs_type, dataset_name, mean_spc,
                       n_clicks=20, model_name=None):
     table_header = (f'|{"BRS Type":^13}|{"Dataset":^11}|'
                     f'{"NoC@80%":^9}|{"NoC@85%":^9}|{"NoC@90%":^9}|'
-                    f'{">="+str(n_clicks)+"@85%":^9}|{">="+str(n_clicks)+"@90%":^9}|'
+                    f'{">=" + str(n_clicks) + "@85%":^9}|{">=" + str(n_clicks) + "@90%":^9}|'
                     f'{"SPC,s":^7}|{"Time":^9}|')
     row_width = len(table_header)
 
