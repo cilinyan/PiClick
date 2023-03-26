@@ -339,16 +339,11 @@ class ISTrainer(object):
         metrics = self.val_metrics if validation else self.train_metrics
         losses_logging = dict()
 
-        print('images:    {}'.format(batch_data['images'].shape))
-        print('instances: {}'.format(batch_data['instances'].shape))
-        print('points:    {}'.format(batch_data['points'].shape))
-        print('data_info: {}'.format(len(batch_data['data_info'])))
-
         with torch.set_grad_enabled(not validation):
-            print('images:    {}'.format(batch_data['images'].shape))
-            print('instances: {}'.format(batch_data['instances'].shape))
-            print('points:    {}'.format(batch_data['points'].shape))
-            print('data_info: {}'.format(len(batch_data['data_info'])))
+            logger.debug('images:    {}'.format(batch_data['images'].shape))
+            logger.debug('instances: {}'.format(batch_data['instances'].shape))
+            logger.debug('points:    {}'.format(batch_data['points'].shape))
+            logger.debug('data_info: {}'.format(len(batch_data['data_info'])))
             batch_data = {k: v.to(self.device) if isinstance(v, torch.Tensor) else v for k, v in batch_data.items()}
             image, gt_mask, points = batch_data['images'], batch_data['instances'], batch_data['points']
 
@@ -373,25 +368,25 @@ class ISTrainer(object):
                         eval_model = self.click_models[click_indx]
 
                     net_input = torch.cat((image, prev_output), dim=1) if self.net.with_prev_mask else image
-                    output = eval_model(net_input, points)
+                    output = eval_model(net_input, points, batch_first=True)
                     output = output_batch_no_first(output)
 
-                    print('net_input:   {}'.format(net_input.shape))
-                    print('out_scores   {}'.format(len(output['instances'][0].shape)))
-                    print('out_masks    {}'.format(len(output['instances'][1].shape)))
-                    import pdb; pdb.set_trace()
+                    logger.debug('net_input:   {}'.format(net_input.shape))
+                    logger.debug('out_scores   {}'.format(output['instances'][0].shape))
+                    logger.debug('out_masks    {}'.format(output['instances'][1].shape))
+
                     labels_list, label_weights_list, mask_targets_list, mask_weights_list, num_total_pos, num_total_neg = \
                         self.mask_match(batch_data, gt_mask, output)
                     masks_choice = choice_mask(labels_list, output['instances'][1][-1])
 
-                    print('labels_list: {}'.format(len(labels_list)))
-                    print('masks_choice:{}'.format(masks_choice.shape))
+                    logger.debug('labels_list: {}'.format(len(labels_list)))
+                    logger.debug('masks_choice:{}'.format(masks_choice.shape))
 
                     prev_output = torch.sigmoid(masks_choice)
 
-                    print('prev_output: {}'.format(prev_output.shape))
-                    print('points:      {}'.format(points.shape))
-                    print('orig_gt_mask:{}'.format(orig_gt_mask.shape))
+                    logger.debug('prev_output: {}'.format(prev_output.shape))
+                    logger.debug('points:      {}'.format(points.shape))
+                    logger.debug('orig_gt_mask:{}'.format(orig_gt_mask.shape))
 
                     points = get_next_points(prev_output, orig_gt_mask, points, click_indx + 1)
 
@@ -410,7 +405,7 @@ class ISTrainer(object):
                  zip(batch_data['points'], batch_data['data_info'], gt_mask)]
 
             net_input = torch.cat((image, prev_output), dim=1) if self.net.with_prev_mask else image
-            output = self.net(net_input, points, train_mode=True)
+            output = self.net(net_input, points, batch_first=True, train_mode=True)
             output = output_batch_no_first(output)
 
             print('1' * 10)

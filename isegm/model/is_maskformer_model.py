@@ -143,7 +143,7 @@ class MaskFormerModel(ISModel):
 
         return {'instances': self.head(multi_scale_features), 'instances_aux': None}
 
-    def forward(self, image, points, **kwargs):
+    def forward(self, image, points, batch_first=False, **kwargs):
         image, prev_mask = self.prepare_input(image)
         coord_features = self.get_coord_features(image, prev_mask, points)
         coord_features = self.maps_transform(coord_features)
@@ -160,17 +160,20 @@ class MaskFormerModel(ISModel):
             all_mask_preds = nn.functional.interpolate(all_mask_preds, size=image.size()[2:],
                                                        mode='bilinear', align_corners=True)
             all_mask_preds = torch.reshape(all_mask_preds, (num_layer, batch_size, num_queries, h_img, w_img))
-            outputs['instances'] = all_cls_scores.transpose(0, 1), all_mask_preds.transpose(0, 1)
+            if batch_first:
+                outputs['instances'] = all_cls_scores.transpose(0, 1), all_mask_preds.transpose(0, 1)
+            else:
+                outputs['instances'] = all_cls_scores, all_mask_preds
 
         if self.with_aux_output:
             outputs['instances_aux'] = nn.functional.interpolate(outputs['instances_aux'], size=image.size()[2:],
                                                                  mode='bilinear', align_corners=True)
 
         if kwargs.get('test_model', False):
-            outputs['instances'] = select_max_score_mask(*outputs['instances'], batch_first=True)
+            outputs['instances'] = select_max_score_mask(*outputs['instances'], batch_first=batch_first)
 
         if kwargs.get('train_mode', False):
-            outputs['single_masks'] = select_max_score_mask(*outputs['instances'], batch_first=True)
+            outputs['single_masks'] = select_max_score_mask(*outputs['instances'], batch_first=batch_first)
 
         return outputs
 
