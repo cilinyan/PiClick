@@ -378,7 +378,6 @@ class ISTrainer(object):
 
             batch_data['points'] = points
 
-            print('1' * 10)
 
             # 根据当前点生成 gt masks
             gt_masks = \
@@ -387,6 +386,9 @@ class ISTrainer(object):
 
             net_input = torch.cat((image, prev_output), dim=1) if self.net.with_prev_mask else image
             output = self.net(net_input, points, train_mode=True)
+
+
+            print('1' * 10)
 
             loss = 0.0
             loss = self.add_loss('instance_loss', loss, losses_logging, validation,
