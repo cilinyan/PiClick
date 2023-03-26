@@ -10,17 +10,18 @@ BERKELEY_PATH: "./datasets/Berkeley"
 DAVIS_PATH: "./datasets/DAVIS"
 COCO_MVAL_PATH: "./datasets/COCO_MVal"
 BraTS_PATH: "./datasets/BraTS20"
-ssTEM_PATH: "./datasets/ssTEM"
-OAIZIB_PATH: "./datasets/OAI-ZIB/iseg_slices"
+ssTEM_PATH: "./datasets/ssTEM/groundtruth-drosophila-vnc-master/stack1"
+OAIZIB_PATH: "./datasets/OAI_ZIB"
 OAI_PATH: "./datasets/OAI"
 HARD_PATH: "./datasets/HARD"
 
+
 # Train datasets
-SBD_PATH: "./datasets/SBD/dataset"
+SBD_PATH: "./datasets/SBD/benchmark_RELEASE/dataset/"
 COCO_PATH: "./datasets/LVIS"
 LVIS_v1_PATH: "./datasets/LVIS"
 OPENIMAGES_PATH: "./datasets/OpenImages"
-PASCALVOC_PATH: "./datasets/VOC"
+PASCALVOC_PATH: "./datasets/VOC/VOCdevkit/VOC2012"
 ADE20K_PATH: "./datasets/ADE20K"
 
 # You can download the weights for HRNet from the repository:
