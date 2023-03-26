@@ -11,6 +11,35 @@ from .modeling.maskformer_helper.positional_encoding import SinePositionalEncodi
 
 from mmcv.cnn import Conv2d, caffe2_xavier_init
 
+_PARAMS = dict(
+    num_queries=7,
+    num_classes=1,
+)
+_BACKBONE_PARAMS = dict(
+    img_size=(224, 224),
+    patch_size=(16, 16),
+    in_chans=3,
+    embed_dim=768,
+    depth=12,
+    num_heads=12,
+    mlp_ratio=4,
+    qkv_bias=True,
+)
+
+_NECK_PARAMS = dict(
+    in_dim=768,
+    out_dims=[256, 256, 256, 256],
+)
+
+_HEAD_PARAMS = dict(
+    num_classes=_PARAMS['num_classes'],
+    num_queries=_PARAMS['num_queries'],
+    in_channels=[256, 256, 256, 256],
+    feat_channels=256,
+    out_channels=256,
+    transformer_decoder_num_layers=6,
+)
+
 
 class SimpleFPN(nn.Module):
     def __init__(self, in_dim=768, out_dims=[128, 256, 512, 1024]):
@@ -66,11 +95,11 @@ class MaskFormerModel(ISModel):
     @serialize
     def __init__(
             self,
-            num_classes,
-            num_queries,
-            backbone_params: dict,
-            neck_params: dict,
-            head_params: dict,
+            num_classes: int = _PARAMS['num_classes'],
+            num_queries: int = _PARAMS['num_queries'],
+            backbone_params: dict = _BACKBONE_PARAMS,
+            neck_params: dict = _NECK_PARAMS,
+            head_params: dict = _HEAD_PARAMS,
             random_split=False,
             **kwargs
     ):
