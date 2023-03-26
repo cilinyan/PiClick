@@ -333,8 +333,8 @@ class ISTrainer(object):
     def batch_forward(self, batch_data, validation=False):
         metrics = self.val_metrics if validation else self.train_metrics
         losses_logging = dict()
-        
-        print('F: {}, BS: {}'.format(torch.distributed.get_rank(), batch_data['images'].shape[0]))
+
+        print('BS: {}'.format(batch_data['images'].shape[0]))
 
         with torch.set_grad_enabled(not validation):
             batch_data = {k: v.to(self.device) if isinstance(v, torch.Tensor) else v for k, v in batch_data.items()}
