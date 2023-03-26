@@ -410,8 +410,6 @@ class ISTrainer(object):
             output = self.net(net_input, points, batch_first=True, train_mode=True)
             output = output_batch_no_first(output)
 
-            print('1' * 10)
-
             loss = 0.0
             loss = self.add_loss('instance_loss', loss, losses_logging, validation,
                                  lambda: (output['instances'], gt_masks))
