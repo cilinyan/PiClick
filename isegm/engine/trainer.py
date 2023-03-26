@@ -371,8 +371,9 @@ class ISTrainer(object):
                     output = eval_model(net_input, points)
 
                     print('net_input:   {}'.format(net_input.shape))
-                    print('output:      {}'.format(len(output)))
-
+                    print('out_scores   {}'.format(len(output['instances'][0].shape)))
+                    print('out_masks    {}'.format(len(output['instances'][1].shape)))
+                    import pdb; pdb.set_trace()
                     labels_list, label_weights_list, mask_targets_list, mask_weights_list, num_total_pos, num_total_neg = \
                         self.mask_match(batch_data, gt_mask, output)
                     masks_choice = choice_mask(labels_list, output['instances'][1][-1])
