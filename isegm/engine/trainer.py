@@ -334,9 +334,16 @@ class ISTrainer(object):
         metrics = self.val_metrics if validation else self.train_metrics
         losses_logging = dict()
 
-        print('BS: {}'.format(batch_data['images'].shape[0]))
+        print('images:    {}'.format(batch_data['images'].shape))
+        print('instances: {}'.format(batch_data['instances'].shape))
+        print('points:    {}'.format(batch_data['points'].shape))
+        print('data_info: {}'.format(len(batch_data['data_info'])))
 
         with torch.set_grad_enabled(not validation):
+            print('images:    {}'.format(batch_data['images'].shape))
+            print('instances: {}'.format(batch_data['instances'].shape))
+            print('points:    {}'.format(batch_data['points'].shape))
+            print('data_info: {}'.format(len(batch_data['data_info'])))
             batch_data = {k: v.to(self.device) if isinstance(v, torch.Tensor) else v for k, v in batch_data.items()}
             image, gt_mask, points = batch_data['images'], batch_data['instances'], batch_data['points']
 
