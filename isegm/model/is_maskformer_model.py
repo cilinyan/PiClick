@@ -163,7 +163,7 @@ class MaskFormerModel(ISModel):
             outputs['instances_aux'] = nn.functional.interpolate(outputs['instances_aux'], size=image.size()[2:],
                                                                  mode='bilinear', align_corners=True)
 
-        if 'test_model' in kwargs.keys() and kwargs['test_model']:
+        if kwargs.get('test_model', False) or kwargs.get('single_output', False):
             outputs['instances'] = select_max_score_mask(*outputs['instances'])
 
         return outputs

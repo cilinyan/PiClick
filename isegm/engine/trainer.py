@@ -91,8 +91,8 @@ class ISTrainer(object):
                  optimizer='adam',
                  optimizer_params=None,
                  layerwise_decay=False,
-                 image_dump_interval=200,
-                 checkpoint_interval=10,
+                 image_dump_interval=20,
+                 checkpoint_interval=1,
                  tb_dump_period=25,
                  max_interactive_points=0,
                  lr_scheduler=None,
@@ -225,8 +225,7 @@ class ISTrainer(object):
         for i, batch_data in enumerate(tbar):
             global_step = epoch * len(self.train_data) + i
 
-            loss, losses_logging, splitted_batch_data, outputs = \
-                self.batch_forward(batch_data)
+            loss, losses_logging, splitted_batch_data, outputs = self.batch_forward(batch_data)
 
             self.optim.zero_grad()
             loss.backward()
@@ -321,6 +320,17 @@ class ISTrainer(object):
                 self.sw.add_scalar(tag=f'{log_prefix}Metrics/{metric.name}', value=metric.get_epoch_value(),
                                    global_step=epoch, disable_avg=True)
 
+    def mask_match(self, batch_data, gt_mask, output):
+        gt_masks = \
+            [get_masks_by_points(p, i, g) for p, i, g in zip(batch_data['points'], batch_data['data_info'], gt_mask)]
+        gt_labels = [torch.tensor([0] * m.shape[0], dtype=torch.int).to(self.device).long() for m in gt_masks]
+        gt_masks = [torch.tensor(g).long().to(self.device) for g in gt_masks]
+        cls_scores_list, mask_preds_list = output['instances']
+        img_metas = [dict() for _ in gt_masks]
+        labels_list, label_weights_list, mask_targets_list, mask_weights_list, num_total_pos, num_total_neg = \
+            self.get_targets(cls_scores_list[-1], mask_preds_list[-1], gt_labels, gt_masks, img_metas)
+        return labels_list, label_weights_list, mask_targets_list, mask_weights_list, num_total_pos, num_total_neg
+
     def batch_forward(self, batch_data, validation=False):
         metrics = self.val_metrics if validation else self.train_metrics
         losses_logging = dict()
@@ -352,17 +362,9 @@ class ISTrainer(object):
                     net_input = torch.cat((image, prev_output), dim=1) if self.net.with_prev_mask else image
                     output = eval_model(net_input, points)
 
-                    gt_masks = \
-                        [get_masks_by_points(p, i, g) for p, i, g in
-                         zip(batch_data['points'], batch_data['data_info'], gt_mask)]
-                    gt_labels = [torch.tensor([0] * m.shape[0], dtype=torch.int).to(self.device).long()
-                                 for m in gt_masks]
-                    gt_masks = [torch.tensor(g).long().to(self.device) for g in gt_masks]
-                    cls_scores_list, mask_preds_list = output['instances']
-                    img_metas = [dict() for _ in gt_masks]
                     labels_list, label_weights_list, mask_targets_list, mask_weights_list, num_total_pos, num_total_neg = \
-                        self.get_targets(cls_scores_list[-1], mask_preds_list[-1], gt_labels, gt_masks, img_metas)
-                    masks_choice = choice_mask(labels_list, mask_preds_list[-1])
+                        self.mask_match(batch_data, gt_mask, output)
+                    masks_choice = choice_mask(labels_list, output['instances'][1][-1])
 
                     prev_output = torch.sigmoid(masks_choice)
 
@@ -379,21 +381,11 @@ class ISTrainer(object):
 
             # 根据当前点生成 gt masks
             gt_masks = \
-                [get_masks_by_points(p, i, g) for p, i, g in
+                [torch.tensor(get_masks_by_points(p, i, g)).long().to(self.device) for p, i, g in
                  zip(batch_data['points'], batch_data['data_info'], gt_mask)]
-            gt_labels = [torch.tensor([0] * m.shape[0], dtype=torch.int).to(self.device).long()
-                         for m in gt_masks]
-            gt_masks = [torch.tensor(g).long().to(self.device) for g in gt_masks]
 
             net_input = torch.cat((image, prev_output), dim=1) if self.net.with_prev_mask else image
-            output = self.net(net_input, points)
-
-            # cls_scores_list, mask_preds_list = output['instances']
-            # img_metas = [dict() for _ in gt_masks]
-            # labels_list, label_weights_list, mask_targets_list, mask_weights_list, num_total_pos, num_total_neg = \
-            #     self.get_targets(cls_scores_list[-1], mask_preds_list[-1], gt_labels, gt_masks, img_metas)
-            # masks_choice = choice_mask(labels_list, mask_preds_list[-1])
-            output_convert = dict(instances=select_max_score_mask(*output['instances']))
+            output = self.net(net_input, points, single_output=True)
 
             loss = 0.0
             loss = self.add_loss('instance_loss', loss, losses_logging, validation,
@@ -404,8 +396,7 @@ class ISTrainer(object):
             if self.is_master:
                 with torch.no_grad():
                     for m in metrics:
-                        m.update(*(output_convert.get(x) for x in m.pred_outputs),
-                                 *(batch_data[x] for x in m.gt_outputs))
+                        m.update(*(output.get(x) for x in m.pred_outputs), *(batch_data[x] for x in m.gt_outputs))
         return loss, losses_logging, batch_data, output
 
     def add_loss(self, loss_name, total_loss, losses_logging, validation, lambda_loss_inputs):
@@ -439,8 +430,7 @@ class ISTrainer(object):
         instance_masks = splitted_batch_data['instances']
 
         gt_instance_masks = instance_masks.cpu().numpy()
-        mask_preds = select_max_score_mask(*outputs['instances'])
-        predicted_instance_masks = torch.sigmoid(mask_preds).detach().cpu().numpy()
+        predicted_instance_masks = torch.sigmoid(outputs['instances']).detach().cpu().numpy()
         points = points.detach().cpu().numpy()
 
         image_blob, points = images[0], points[0]
@@ -480,8 +470,7 @@ class ISTrainer(object):
     def is_master(self):
         return self.cfg.local_rank == 0
 
-    def get_targets(self, cls_scores_list, mask_preds_list, gt_labels_list,
-                    gt_masks_list, img_metas):
+    def get_targets(self, cls_scores_list, mask_preds_list, gt_labels_list, gt_masks_list):
         """Compute classification and mask targets for all images for a decoder layer.
 
         Args:
@@ -512,18 +501,14 @@ class ISTrainer(object):
                 - num_total_neg (int): Number of negative samples in\
                     all images.
         """
-        (labels_list, label_weights_list, mask_targets_list, mask_weights_list,
-         pos_inds_list,
-         neg_inds_list) = multi_apply(self._get_target_single, cls_scores_list,
-                                      mask_preds_list, gt_labels_list,
-                                      gt_masks_list, img_metas)
+        labels_list, label_weights_list, mask_targets_list, mask_weights_list, pos_inds_list, neg_inds_list = \
+            multi_apply(self._get_target_single, cls_scores_list, mask_preds_list, gt_labels_list, gt_masks_list)
 
         num_total_pos = sum((inds.numel() for inds in pos_inds_list))
         num_total_neg = sum((inds.numel() for inds in neg_inds_list))
-        return (labels_list, label_weights_list, mask_targets_list,
-                mask_weights_list, num_total_pos, num_total_neg)
+        return labels_list, label_weights_list, mask_targets_list, mask_weights_list, num_total_pos, num_total_neg
 
-    def _get_target_single(self, cls_score, mask_pred, gt_labels, gt_masks, img_metas):
+    def _get_target_single(self, cls_score, mask_pred, gt_labels, gt_masks):
         """Compute classification and mask targets for one image.
 
         Args:
@@ -553,13 +538,13 @@ class ISTrainer(object):
         """
         target_shape = mask_pred.shape[-2:]
         if gt_masks.shape[0] > 0:
-            gt_masks_downsampled = F.interpolate(gt_masks.unsqueeze(1).float(),
-                                                 target_shape, mode='nearest').squeeze(1).long()
+            gt_masks_downsampled = \
+                F.interpolate(gt_masks.unsqueeze(1).float(), target_shape, mode='nearest').squeeze(1).long()
         else:
             gt_masks_downsampled = gt_masks
 
         # assign and sample
-        assign_result = self.assigner.assign(cls_score, mask_pred, gt_labels, gt_masks_downsampled, img_metas)
+        assign_result = self.assigner.assign(cls_score, mask_pred, gt_labels, gt_masks_downsampled)
         sampling_result = self.sampler.sample(assign_result, mask_pred, gt_masks)
         pos_inds = sampling_result.pos_inds
         neg_inds = sampling_result.neg_inds
