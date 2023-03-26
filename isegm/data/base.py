@@ -67,7 +67,7 @@ class ISDataset(torch.utils.data.dataset.Dataset):
         return output
 
     def __getitem__(self, index):
-        index = index % self.actual_len
+        index = index if index < self.actual_len else random.randrange(0, self.actual_len)
         try:
             return self._get_item(index)
         except Exception as e:
@@ -98,7 +98,7 @@ class ISDataset(torch.utils.data.dataset.Dataset):
             return self.get_samples_number()
 
     def __len__(self):
-        return math.ceil(self.actual_len / 8) * 8
+        return math.ceil(self.actual_len / 8 / 196) * 8 * 196
 
     def get_samples_number(self):
         return len(self.dataset_samples)
