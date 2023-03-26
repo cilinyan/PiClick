@@ -63,7 +63,8 @@ class BasePredictor(object):
         )
 
         pred_logits = self._get_prediction(image_nd, clicks_lists, is_image_changed)
-        import pdb; pdb.set_trace()
+        import pdb;
+        pdb.set_trace()
         prediction = F.interpolate(pred_logits, mode='bilinear', align_corners=True,
                                    size=image_nd.size()[2:])
 
@@ -78,7 +79,7 @@ class BasePredictor(object):
 
     def _get_prediction(self, image_nd, clicks_lists, is_image_changed):
         points_nd = self.get_points_nd(clicks_lists)
-        return self.net(image_nd, points_nd)['instances']
+        return self.net(image_nd, points_nd, test_model=True)['instances']
 
     def _get_transform_states(self):
         return [x.get_state() for x in self.transforms]

@@ -41,6 +41,17 @@ _HEAD_PARAMS = dict(
 )
 
 
+def select_max_score_mask(cls_scores_list, mask_preds_list):
+    cls_scores_list = cls_scores_list[-1]
+    mask_preds_list = mask_preds_list[-1]
+    indexes = torch.argmax(cls_scores_list.softmax(dim=-1)[:, :, 0], dim=-1)
+    max_scores_masks = list()
+    for i, m in zip(indexes, mask_preds_list):
+        max_scores_masks.append(m[i:i + 1])
+    max_scores_masks = torch.stack(max_scores_masks)
+    return max_scores_masks
+
+
 class SimpleFPN(nn.Module):
     def __init__(self, in_dim=768, out_dims=[128, 256, 512, 1024]):
         super().__init__()
@@ -128,6 +139,34 @@ class MaskFormerModel(ISModel):
         multi_scale_features = self.neck(backbone_features)
 
         return {'instances': self.head(multi_scale_features), 'instances_aux': None}
+
+    def forward(self, image, points, **kwargs):
+        image, prev_mask = self.prepare_input(image)
+        coord_features = self.get_coord_features(image, prev_mask, points)
+        coord_features = self.maps_transform(coord_features)
+        outputs = self.backbone_forward(image, coord_features)
+
+        if not isinstance(outputs['instances'], tuple):
+            outputs['instances'] = nn.functional.interpolate(outputs['instances'], size=image.size()[2:],
+                                                             mode='bilinear', align_corners=True)
+        else:
+            all_cls_scores, all_mask_preds = outputs['instances']
+            h_img, w_img = image.shape[-2:]
+            num_layer, batch_size, num_queries, h_feat, w_feat = all_mask_preds.shape
+            all_mask_preds = torch.reshape(all_mask_preds, (num_layer * batch_size, num_queries, h_feat, w_feat))
+            all_mask_preds = nn.functional.interpolate(all_mask_preds, size=image.size()[2:],
+                                                       mode='bilinear', align_corners=True)
+            all_mask_preds = torch.reshape(all_mask_preds, (num_layer, batch_size, num_queries, h_img, w_img))
+            outputs['instances'] = all_cls_scores, all_mask_preds
+
+        if self.with_aux_output:
+            outputs['instances_aux'] = nn.functional.interpolate(outputs['instances_aux'], size=image.size()[2:],
+                                                                 mode='bilinear', align_corners=True)
+
+        if 'test_model' in kwargs.keys() and kwargs['test_model']:
+            outputs['instances'] = select_max_score_mask(*outputs['instances'])
+
+        return outputs
 
 
 class MaskFormerHead(nn.Module):
