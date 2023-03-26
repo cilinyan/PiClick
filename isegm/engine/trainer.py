@@ -37,6 +37,11 @@ TRAIN_CFG: dict = dict(
 )
 
 
+def output_batch_no_first(output):
+    output['instances'] = output['instances'][0].transpose(0, 1), output['instances'][1].transpose(0, 1)
+    return output
+
+
 def collate_fn(values):
     res = defaultdict(list)
     for value in values:
@@ -369,6 +374,7 @@ class ISTrainer(object):
 
                     net_input = torch.cat((image, prev_output), dim=1) if self.net.with_prev_mask else image
                     output = eval_model(net_input, points)
+                    output = output_batch_no_first(output)
 
                     print('net_input:   {}'.format(net_input.shape))
                     print('out_scores   {}'.format(len(output['instances'][0].shape)))
@@ -405,6 +411,7 @@ class ISTrainer(object):
 
             net_input = torch.cat((image, prev_output), dim=1) if self.net.with_prev_mask else image
             output = self.net(net_input, points, train_mode=True)
+            output = output_batch_no_first(output)
 
             print('1' * 10)
 

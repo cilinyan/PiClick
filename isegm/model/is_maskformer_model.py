@@ -41,7 +41,10 @@ _HEAD_PARAMS = dict(
 )
 
 
-def select_max_score_mask(cls_scores_list, mask_preds_list):
+def select_max_score_mask(cls_scores_list, mask_preds_list, batch_first: bool = False):
+    if batch_first:
+        cls_scores_list = cls_scores_list.transpose(0, 1)
+        mask_preds_list = mask_preds_list.transpose(0, 1)
     cls_scores_list = cls_scores_list[-1]
     mask_preds_list = mask_preds_list[-1]
     indexes = torch.argmax(cls_scores_list.softmax(dim=-1)[:, :, 0], dim=-1)
@@ -157,17 +160,17 @@ class MaskFormerModel(ISModel):
             all_mask_preds = nn.functional.interpolate(all_mask_preds, size=image.size()[2:],
                                                        mode='bilinear', align_corners=True)
             all_mask_preds = torch.reshape(all_mask_preds, (num_layer, batch_size, num_queries, h_img, w_img))
-            outputs['instances'] = all_cls_scores, all_mask_preds
+            outputs['instances'] = all_cls_scores.transpose(0, 1), all_mask_preds.transpose(0, 1)
 
         if self.with_aux_output:
             outputs['instances_aux'] = nn.functional.interpolate(outputs['instances_aux'], size=image.size()[2:],
                                                                  mode='bilinear', align_corners=True)
 
         if kwargs.get('test_model', False):
-            outputs['instances'] = select_max_score_mask(*outputs['instances'])
+            outputs['instances'] = select_max_score_mask(*outputs['instances'], batch_first=True)
 
         if kwargs.get('train_mode', False):
-            outputs['single_masks'] = select_max_score_mask(*outputs['instances'])
+            outputs['single_masks'] = select_max_score_mask(*outputs['instances'], batch_first=True)
 
         return outputs
 
