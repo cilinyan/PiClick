@@ -9,6 +9,7 @@ from .pos_embed import interpolate_pos_embed
 class Mlp(nn.Module):
     """ MLP as used in Vision Transformer, MLP-Mixer and related networks
     """
+
     def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=nn.GELU, drop=0.):
         super().__init__()
         out_features = out_features or in_features
@@ -29,6 +30,7 @@ class Mlp(nn.Module):
 
 class Attention(nn.Module):
     ''' Multi-head self-attention '''
+
     def __init__(self, dim, num_heads=8, qkv_bias=False, attn_drop=0., proj_drop=0.):
         super().__init__()
         self.num_heads = num_heads
@@ -49,7 +51,7 @@ class Attention(nn.Module):
         attn = attn.softmax(dim=-1)
         attn = self.attn_drop(attn)
 
-        x = (attn @ v).transpose(1,2).reshape(B, N, C)
+        x = (attn @ v).transpose(1, 2).reshape(B, N, C)
         x = self.proj(x)
         x = self.proj_drop(x)
 
@@ -58,14 +60,14 @@ class Attention(nn.Module):
 
 class Block(nn.Module):
 
-    def __init__(self, dim, num_heads, mlp_ratio=4., mlp_drop=0., qkv_bias=False, attn_drop=0., 
-        proj_drop=0., act_layer=nn.GELU, norm_layer=nn.LayerNorm):
+    def __init__(self, dim, num_heads, mlp_ratio=4., mlp_drop=0., qkv_bias=False, attn_drop=0.,
+                 proj_drop=0., act_layer=nn.GELU, norm_layer=nn.LayerNorm):
         super().__init__()
         self.norm1 = norm_layer(dim)
         self.norm2 = norm_layer(dim)
 
-        self.attn = Attention(dim, num_heads=num_heads, qkv_bias=qkv_bias, attn_drop=attn_drop, 
-            proj_drop=proj_drop)
+        self.attn = Attention(dim, num_heads=num_heads, qkv_bias=qkv_bias, attn_drop=attn_drop,
+                              proj_drop=proj_drop)
         mlp_hidden_dim = int(dim * mlp_ratio)
         self.mlp = Mlp(in_features=dim, hidden_features=mlp_hidden_dim, act_layer=act_layer, drop=mlp_drop)
 
@@ -78,7 +80,8 @@ class Block(nn.Module):
 class PatchEmbed(nn.Module):
     """ 2D Image to Patch Embedding
     """
-    def __init__(self, img_size=(224,224), patch_size=(16,16), in_chans=3, embed_dim=768, 
+
+    def __init__(self, img_size=(224, 224), patch_size=(16, 16), in_chans=3, embed_dim=768,
                  norm_layer=None, flatten=True):
         super().__init__()
         self.in_chans = in_chans
@@ -106,9 +109,10 @@ class PatchEmbed(nn.Module):
 
 class VisionTransformer(nn.Module):
     """ Vision Transformer with support for global average pooling 
-    """    
-    def __init__(self, img_size=(224,224), patch_size=(16, 16), in_chans=3, num_classes=1000, embed_dim=768, 
-                 depth=12, num_heads=12, mlp_ratio=4., qkv_bias=True, pos_drop_rate=0., attn_drop_rate=0., 
+    """
+
+    def __init__(self, img_size=(224, 224), patch_size=(16, 16), in_chans=3, num_classes=1000, embed_dim=768,
+                 depth=12, num_heads=12, mlp_ratio=4., qkv_bias=True, pos_drop_rate=0., attn_drop_rate=0.,
                  proj_drop_rate=0., norm_layer=None, act_layer=None, cls_feature_dim=None, global_pool=False):
         super().__init__()
         self.global_pool = global_pool
@@ -116,18 +120,18 @@ class VisionTransformer(nn.Module):
         self.num_features = self.embed_dim = embed_dim
 
         self.patch_embed = PatchEmbed(img_size=img_size, patch_size=patch_size, in_chans=in_chans,
-            embed_dim=embed_dim)
+                                      embed_dim=embed_dim)
         num_patches = self.patch_embed.num_patches
 
         self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
-        self.pos_embed = nn.Parameter(torch.zeros(1, num_patches + 1, embed_dim)) # learnable positional embedding
+        self.pos_embed = nn.Parameter(torch.zeros(1, num_patches + 1, embed_dim))  # learnable positional embedding
         self.pos_drop = nn.Dropout(p=pos_drop_rate)
 
         norm_layer = norm_layer if norm_layer else partial(nn.LayerNorm, eps=1e-6)
         self.blocks = nn.Sequential(*[
-            Block(dim=embed_dim, num_heads=num_heads, mlp_ratio=mlp_ratio, qkv_bias=qkv_bias, 
-              attn_drop=attn_drop_rate, proj_drop=proj_drop_rate, norm_layer=norm_layer, 
-              act_layer=act_layer)
+            Block(dim=embed_dim, num_heads=num_heads, mlp_ratio=mlp_ratio, qkv_bias=qkv_bias,
+                  attn_drop=attn_drop_rate, proj_drop=proj_drop_rate, norm_layer=norm_layer,
+                  act_layer=act_layer)
             for _ in range(depth)])
 
         self.fc_norm = norm_layer(embed_dim)
@@ -212,9 +216,9 @@ class VisionTransformer(nn.Module):
         out = []
         for i in range(num_splits):
             if i == num_splits - 1:
-                out.append(x[:, i*num_tokens_per_split:])
+                out.append(x[:, i * num_tokens_per_split:])
                 return out
-            out.append(x[:, i*num_tokens_per_split:(i+1)*num_tokens_per_split])
+            out.append(x[:, i * num_tokens_per_split:(i + 1) * num_tokens_per_split])
 
     # window split for finetuning on larger size (the pretraining size should be 224 x 224)
     def patchify(self, x):
@@ -249,6 +253,45 @@ class VisionTransformer(nn.Module):
 
         return x
 
+    def forward_multi_scale(self, x, additional_features=None, shuffle=False, num_stage=4):
+        x = self.patch_embed(x)
+        if additional_features is not None:
+            x += additional_features
+
+        x = self.pos_drop(x + self.pos_embed[:, 1:])
+        num_blocks = len(self.blocks)
+        assert num_blocks % 4 == 0
+
+        out_multi_scale = list()
+        out_layers = [num_blocks - i for i in range(num_stage)]
+
+        if shuffle:
+            for i in range(1, num_blocks + 1):
+                x, ids_restore = self.shuffle(x)
+                x_split = self.split(x)
+                x_split = [self.blocks[i - 1](x_split[j]) for j in range(len(x_split))]
+                x = torch.cat(x_split, dim=1)
+                x = self.unshuffle(x, ids_restore)
+                if i in out_layers:
+                    out_multi_scale.append(x)
+        else:
+            num_blocks_per_group = 6 if num_blocks == 12 else num_blocks // 4
+            is_patchified = False
+            for i in range(1, num_blocks + 1):
+                if i % num_blocks_per_group:
+                    if not is_patchified:
+                        x = self.patchify(x)
+                        is_patchified = True
+                    else:
+                        pass  # do nothing
+                else:
+                    x = self.unpatchify(x)
+                    is_patchified = False
+                x = self.blocks[i - 1](x)
+                if i in out_layers:
+                    out_multi_scale.append(x)
+        return out_multi_scale
+
     def forward_backbone(self, x, additional_features=None, shuffle=False):
         x = self.patch_embed(x)
         if additional_features is not None:
@@ -262,7 +305,7 @@ class VisionTransformer(nn.Module):
             for i in range(1, num_blocks + 1):
                 x, ids_restore = self.shuffle(x)
                 x_split = self.split(x)
-                x_split = [self.blocks[i-1](x_split[j]) for j in range(len(x_split))]
+                x_split = [self.blocks[i - 1](x_split[j]) for j in range(len(x_split))]
                 x = torch.cat(x_split, dim=1)
                 x = self.unshuffle(x, ids_restore)
         else:
@@ -274,11 +317,11 @@ class VisionTransformer(nn.Module):
                         x = self.patchify(x)
                         is_patchified = True
                     else:
-                        pass # do nothing
+                        pass  # do nothing
                 else:
                     x = self.unpatchify(x)
                     is_patchified = False
-                x = self.blocks[i-1](x)
+                x = self.blocks[i - 1](x)
         return x
 
     def forward(self, x):
@@ -289,7 +332,7 @@ class VisionTransformer(nn.Module):
         x = self.blocks(x)
 
         if self.global_pool:
-            x = x[:, 1:].mean(dim=1) # global pool without cls token
+            x = x[:, 1:].mean(dim=1)  # global pool without cls token
             x = self.fc_norm(x)
         else:
             x = self.fc_norm(x)
@@ -310,12 +353,14 @@ def vit_base_patch16(**kwargs):
         patch_size=(16, 16), embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, qkv_bias=True, **kwargs)
     return model
 
+
 def vit_large_patch16(**kwargs):
     model = VisionTransformer(
         patch_size=(16, 16), embed_dim=1024, depth=24, num_heads=16, mlp_ratio=4, qkv_bias=True, **kwargs)
     return model
 
+
 def vit_huge_patch14(**kwargs):
     model = VisionTransformer(
-        patch_size=(14,14), embed_dim=1280, depth=32, num_heads=16, mlp_ratio=4, qkv_bias=True, **kwargs)
+        patch_size=(14, 14), embed_dim=1280, depth=32, num_heads=16, mlp_ratio=4, qkv_bias=True, **kwargs)
     return model

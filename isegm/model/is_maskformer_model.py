@@ -178,6 +178,84 @@ class MaskFormerModel(ISModel):
         return outputs
 
 
+class MaskFormerModelV2(ISModel):
+    @serialize
+    def __init__(
+            self,
+            num_classes: int = _PARAMS['num_classes'],
+            num_queries: int = _PARAMS['num_queries'],
+            backbone_params: dict = _BACKBONE_PARAMS,
+            head_params: dict = _HEAD_PARAMS,
+            random_split=False,
+            num_scale: int = 4,
+            **kwargs
+    ):
+
+        self.num_classes = num_classes
+        self.num_queries = num_queries
+        self.num_scale = num_scale
+        super().__init__(**kwargs)
+        self.random_split = random_split
+
+        self.patch_embed_coords = PatchEmbed(
+            img_size=backbone_params['img_size'],
+            patch_size=backbone_params['patch_size'],
+            in_chans=3 if self.with_prev_mask else 2,
+            embed_dim=backbone_params['embed_dim'],
+        )
+
+        self.backbone = VisionTransformer(**backbone_params)
+
+        head_params['in_channels'] = [backbone_params['embed_dim']] * self.num_scale
+
+        self.head = MaskFormerHead(**head_params)
+
+    def backbone_forward(self, image, coord_features=None):
+        coord_features = self.patch_embed_coords(coord_features)
+        backbone_features = \
+            self.backbone.forward_multi_scale(image, coord_features, self.random_split, num_stage=self.num_scale)
+        B, N, C = backbone_features[-1].shape
+        grid_size = self.backbone.patch_embed.grid_size
+        multi_scale_features = \
+            [f.transpose(-1, -2).view(B, C, grid_size[0], grid_size[1]) for f in backbone_features]
+
+        return {'instances': self.head(multi_scale_features), 'instances_aux': None}
+
+    def forward(self, image, points, batch_first=False, **kwargs):
+        image, prev_mask = self.prepare_input(image)
+        coord_features = self.get_coord_features(image, prev_mask, points)
+        coord_features = self.maps_transform(coord_features)
+        outputs = self.backbone_forward(image, coord_features)
+
+        if not isinstance(outputs['instances'], tuple):
+            outputs['instances'] = nn.functional.interpolate(outputs['instances'], size=image.size()[2:],
+                                                             mode='bilinear', align_corners=True)
+        else:
+            all_cls_scores, all_mask_preds = outputs['instances']
+            h_img, w_img = image.shape[-2:]
+            num_layer, batch_size, num_queries, h_feat, w_feat = all_mask_preds.shape
+            all_mask_preds = torch.reshape(all_mask_preds, (num_layer * batch_size, num_queries, h_feat, w_feat))
+            all_mask_preds = nn.functional.interpolate(all_mask_preds, size=image.size()[2:],
+                                                       mode='bilinear', align_corners=True)
+            all_mask_preds = torch.reshape(all_mask_preds, (num_layer, batch_size, num_queries, h_img, w_img))
+            if batch_first:
+                outputs['instances'] = all_cls_scores.transpose(0, 1), all_mask_preds.transpose(0, 1)
+            else:
+                outputs['instances'] = all_cls_scores, all_mask_preds
+
+        if self.with_aux_output:
+            outputs['instances_aux'] = nn.functional.interpolate(outputs['instances_aux'], size=image.size()[2:],
+                                                                 mode='bilinear', align_corners=True)
+
+        if kwargs.get('test_model', False):
+            outputs['instances'] = select_max_score_mask(*outputs['instances'], batch_first=batch_first)
+
+        if kwargs.get('train_mode', False):
+            outputs['single_masks'] = select_max_score_mask(*outputs['instances'], batch_first=batch_first)
+
+        return outputs
+
+
 class MaskFormerHead(nn.Module):
     def __init__(self,
                  num_classes=1,
