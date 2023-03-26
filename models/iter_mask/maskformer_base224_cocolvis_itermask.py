@@ -1,5 +1,5 @@
 """
-python train.py models/iter_mask/maskformer_base224_cocolvis_itermask.py --batch-size=32 --ngpus=1
+python train.py models/iter_mask/maskformer_base224_cocolvis_itermask.py --batch-size=196 --ngpus=1
 """
 
 import sys
