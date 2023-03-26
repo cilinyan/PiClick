@@ -572,6 +572,8 @@ def get_next_points(pred, gt, points, click_indx, pred_thresh=0.49):
     pred = pred.cpu().numpy()[:, 0, :, :]
     gt = gt.cpu().numpy()[:, 0, :, :] > 0.5
 
+    print(f'pred:', pred.shape)
+    print(f'gt:', gt.shape)
     fn_mask = np.logical_and(gt, pred < pred_thresh)
     fp_mask = np.logical_and(np.logical_not(gt), pred > pred_thresh)
 
