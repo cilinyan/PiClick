@@ -249,10 +249,10 @@ class ISTrainer(object):
                 if self.image_dump_interval > 0 and global_step % self.image_dump_interval == 0:
                     self.save_visualization(splitted_batch_data, outputs, global_step, prefix='train')
 
-                self.sw.add_scalar(tag=f'{log_prefix}States/learning_rate',
-                                   value=self.lr if not hasattr(self, 'lr_scheduler') else self.lr_scheduler.get_lr()[
-                                       -1],
-                                   global_step=global_step)
+                self.sw.add_scalar(
+                    tag=f'{log_prefix}States/learning_rate',
+                    value=self.lr if not hasattr(self, 'lr_scheduler') else self.lr_scheduler.get_lr()[-1],
+                    global_step=global_step)
 
                 tbar.set_description(f'Epoch {epoch}, training loss {train_loss / (i + 1):.4f}')
                 for metric in self.train_metrics:
