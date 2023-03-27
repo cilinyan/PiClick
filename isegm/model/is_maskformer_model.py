@@ -215,6 +215,7 @@ class MaskFormerModelV2(ISModel):
         backbone_features = \
             self.backbone.forward_multi_scale(image, coord_features, self.random_split, num_stage=self.num_scale)
         B, N, C = backbone_features[-1].shape
+        import pdb; pdb.set_trace()
         grid_size = self.backbone.patch_embed.grid_size
         multi_scale_features = \
             [f.transpose(-1, -2).view(B, C, grid_size[0], grid_size[1]) for f in backbone_features]
