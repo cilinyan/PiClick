@@ -63,6 +63,7 @@ class BasePredictor(object):
         )
 
         pred_logits = self._get_prediction(image_nd, clicks_lists, is_image_changed)
+        import pdb; pdb.set_trace()
         prediction = F.interpolate(pred_logits, mode='bilinear', align_corners=True,
                                    size=image_nd.size()[2:])
 
