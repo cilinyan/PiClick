@@ -277,6 +277,7 @@ class VisionTransformer(nn.Module):
         else:
             num_blocks_per_group = 6 if num_blocks == 12 else num_blocks // 4
             is_patchified = False
+            import pdb; pdb.set_trace()
             for i in range(1, num_blocks + 1):
                 if i % num_blocks_per_group:
                     if not is_patchified:
