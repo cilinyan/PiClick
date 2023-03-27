@@ -21,7 +21,7 @@ class GrabCutDataset(ISDataset):
 
         self.dataset_samples = [x.name for x in sorted(self._images_path.glob('*.*'))]
         self._masks_paths = {x.stem: x for x in self._insts_path.glob('*.*')}
-        logger.info(f'length: {len(self.dataset_samples)}')
+        # logger.info(f'length: {len(self.dataset_samples)}')
 
     def get_sample(self, index) -> DSample:
         logger.debug(f'index: {index}')
