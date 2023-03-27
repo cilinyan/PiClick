@@ -77,7 +77,7 @@ class BasePredictor(object):
 
     def _get_prediction(self, image_nd, clicks_lists, is_image_changed):
         points_nd = self.get_points_nd(clicks_lists)
-        return self.net(image_nd, points_nd, test_model=True)['instances']
+        return self.net(image_nd, points_nd, test_mode=True)['instances']
 
     def _get_transform_states(self):
         return [x.get_state() for x in self.transforms]

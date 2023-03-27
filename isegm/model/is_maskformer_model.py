@@ -215,10 +215,9 @@ class MaskFormerModelV2(ISModel):
         backbone_features = \
             self.backbone.forward_multi_scale(image, coord_features, self.random_split, num_stage=self.num_scale)
         B, N, C = backbone_features[-1].shape
-        import pdb; pdb.set_trace()
-        grid_size = self.backbone.patch_embed.grid_size
+        grid_size = round(N ** 0.5)
         multi_scale_features = \
-            [f.transpose(-1, -2).view(B, C, grid_size[0], grid_size[1]) for f in backbone_features]
+            [f.transpose(-1, -2).view(B, C, grid_size, grid_size) for f in backbone_features]
 
         return {'instances': self.head(multi_scale_features), 'instances_aux': None}
 
@@ -248,7 +247,7 @@ class MaskFormerModelV2(ISModel):
             outputs['instances_aux'] = nn.functional.interpolate(outputs['instances_aux'], size=image.size()[2:],
                                                                  mode='bilinear', align_corners=True)
 
-        if kwargs.get('test_model', False):
+        if kwargs.get('test_mode', False):
             outputs['instances'] = select_max_score_mask(*outputs['instances'], batch_first=batch_first)
 
         if kwargs.get('train_mode', False):
