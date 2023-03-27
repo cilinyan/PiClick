@@ -254,6 +254,7 @@ class VisionTransformer(nn.Module):
         return x
 
     def forward_multi_scale(self, x, additional_features=None, shuffle=False, num_stage=4):
+        B = x.shape[0]
         x = self.patch_embed(x)
         if additional_features is not None:
             x += additional_features
@@ -277,7 +278,6 @@ class VisionTransformer(nn.Module):
         else:
             num_blocks_per_group = 6 if num_blocks == 12 else num_blocks // 4
             is_patchified = False
-            import pdb; pdb.set_trace()
             for i in range(1, num_blocks + 1):
                 if i % num_blocks_per_group:
                     if not is_patchified:
@@ -290,7 +290,10 @@ class VisionTransformer(nn.Module):
                     is_patchified = False
                 x = self.blocks[i - 1](x)
                 if i in out_layers:
-                    out_multi_scale.append(x)
+                    if x.shape[0] == B:
+                        out_multi_scale.append(x)
+                    else:
+                        out_multi_scale.append(self.unpatchify(x))
         return out_multi_scale
 
     def forward_backbone(self, x, additional_features=None, shuffle=False):
