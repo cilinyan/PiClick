@@ -218,7 +218,6 @@ class MaskFormerModelV2(ISModel):
         feature_shape = [(f.shape[0], f.shape[2], round(f.shape[1] ** 0.5)) for f in backbone_features]
         multi_scale_features = \
             [f.transpose(-1, -2).view(b, c, gs, gs) for f, (b, c, gs) in zip(backbone_features, feature_shape)]
-        import pdb; pdb.set_trace()
 
         return {'instances': self.head(multi_scale_features), 'instances_aux': None}
 
