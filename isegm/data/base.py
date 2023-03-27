@@ -102,7 +102,7 @@ class ISDataset(torch.utils.data.dataset.Dataset):
             return self.get_samples_number()
 
     def __len__(self):
-        return math.ceil(self.actual_len / 8) * 8
+        return self.actual_len
 
     def get_samples_number(self):
         return len(self.dataset_samples)
