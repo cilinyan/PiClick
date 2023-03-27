@@ -6,6 +6,8 @@ import numpy as np
 from isegm.data.base import ISDataset
 from isegm.data.sample import DSample
 
+from loguru import logger
+
 
 class GrabCutDataset(ISDataset):
     def __init__(self, dataset_path,
@@ -19,8 +21,10 @@ class GrabCutDataset(ISDataset):
 
         self.dataset_samples = [x.name for x in sorted(self._images_path.glob('*.*'))]
         self._masks_paths = {x.stem: x for x in self._insts_path.glob('*.*')}
+        logger.info(f'length: {len(self.dataset_samples)}')
 
     def get_sample(self, index) -> DSample:
+        logger.debug(f'index: {index}')
         image_name = self.dataset_samples[index]
         image_path = str(self._images_path / image_name)
         mask_path = str(self._masks_paths[image_name.split('.')[0]])
