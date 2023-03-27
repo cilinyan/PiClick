@@ -214,10 +214,12 @@ class MaskFormerModelV2(ISModel):
         coord_features = self.patch_embed_coords(coord_features)
         backbone_features = \
             self.backbone.forward_multi_scale(image, coord_features, self.random_split, num_stage=self.num_scale)
-        B, N, C = backbone_features[-1].shape
-        grid_size = round(N ** 0.5)
+        # B, N, C = backbone_features[-1].shape
+        # grid_size = round(N ** 0.5)
+        # B, C, grid_size
+        feature_shape = [(f.shape[0], f.shape[2], round(f.shape[1] ** 0.5)) for f in backbone_features]
         multi_scale_features = \
-            [f.transpose(-1, -2).view(B, C, grid_size, grid_size) for f in backbone_features]
+            [f.transpose(-1, -2).view(b, c, gs, gs) for f, (b, c, gs) in zip(backbone_features, feature_shape)]
 
         return {'instances': self.head(multi_scale_features), 'instances_aux': None}
 
