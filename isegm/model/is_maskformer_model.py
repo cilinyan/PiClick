@@ -8,6 +8,8 @@ from .modeling.models_vit import VisionTransformer, PatchEmbed
 from .modeling.maskformer_helper.pixel_decoder import PixelDecoder
 from .modeling.maskformer_helper.transformer import DetrTransformerDecoder
 from .modeling.maskformer_helper.positional_encoding import SinePositionalEncoding
+from .modeling.maskformer_helper.mask_hungarian_assigner import MaskHungarianAssigner
+from .modeling.maskformer_helper.mask_pseudo_sampler import MaskPseudoSampler
 
 from mmcv.cnn import Conv2d, caffe2_xavier_init
 
@@ -38,6 +40,13 @@ _HEAD_PARAMS = dict(
     feat_channels=256,
     out_channels=256,
     transformer_decoder_num_layers=6,
+)
+TRAIN_CFG: dict = dict(
+    assigner=dict(type='MaskHungarianAssigner',
+                  cls_cost=dict(type='ClassificationCost', weight=1.0),
+                  mask_cost=dict(type='FocalLossCost', weight=20.0, binary_input=True),
+                  dice_cost=dict(type='DiceCost', weight=1.0, pred_act=True, eps=1.0)),
+    sampler=dict(type='MaskPseudoSampler')
 )
 
 
@@ -131,6 +140,9 @@ class MaskFormerModel(ISModel):
         self.backbone = VisionTransformer(**backbone_params)
         self.neck = SimpleFPN(**neck_params)
         self.head = MaskFormerHead(**head_params)
+
+        self.assigner = MaskHungarianAssigner(**TRAIN_CFG['assigner'])
+        self.sampler = MaskPseudoSampler()
 
     def backbone_forward(self, image, coord_features=None):
         coord_features = self.patch_embed_coords(coord_features)
