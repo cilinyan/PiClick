@@ -342,7 +342,7 @@ class ISTrainer(object):
                         eval_model = self.click_models[click_indx]
 
                     net_input = torch.cat((image, prev_output), dim=1) if self.net.with_prev_mask else image
-                    output = eval_model(net_input, gt_mask, points, batch_data)
+                    output = eval_model.forward_for_iter(net_input, gt_mask, points, batch_data)
                     prev_output = torch.sigmoid(output)
 
                     logger.debug('prev_output: {}'.format(prev_output.shape))
