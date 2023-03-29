@@ -4,6 +4,8 @@ import random
 import numpy as np
 import json
 import cv2
+import torch
+from collections import defaultdict
 from copy import deepcopy
 from isegm.data.base import ISDataset
 from isegm.data.sample import DSample
@@ -93,3 +95,16 @@ class CocoLvisDataset(ISDataset):
             if self.stuff_prob > 0 and random.random() < self.stuff_prob else sample['num_instance_masks']
 
         return DSample(image, layers, objects=instances_info, image_id=image_id, select_range=select_range)
+
+    def collate_fn(self, values):
+        res = defaultdict(list)
+        for value in values:
+            for k, v in value.items():
+                res[k].append(v)
+        res = {
+            'images': torch.stack(res['images']),
+            'points': torch.tensor(np.array(res['points'])),
+            'instances': torch.tensor(np.array(res['instances'])),
+            'data_info': res['data_info'],
+        }
+        return res

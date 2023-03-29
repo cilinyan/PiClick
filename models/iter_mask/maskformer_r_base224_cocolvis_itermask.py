@@ -1,37 +1,13 @@
-"""
-python train.py models/iter_mask/maskformer_base224_cocolvis_itermask.py --batch-size=200 --ngpus=8
-"""
-
-import sys
-
-import numpy as np
-import torch
-import torch.nn as nn
-
-sys.path.insert(1, '.')
-
 from isegm.utils.exp_imports.default import *
 from isegm.model.losses import DETRLikeLoss
 from isegm.model.is_maskformer_model import MaskFormerModel
-from tools.visual import draw_sample, draw_masks, PALETTE
-from torch.utils.data import DataLoader
-from isegm.utils.distributed import get_dp_wrapper, get_sampler, reduce_loss_dict
-from isegm.model.modeling.maskformer_helper.misc import multi_apply
 
-from collections import defaultdict
-from loguru import logger
-import pdb
-from copy import deepcopy
-from typing import Union
+MODEL_NAME = 'maskformer_r_plainvit_base224'
 
-MODEL_NAME = 'cocolvis_plainvit_base224'
-
-device = torch.device('cuda')
 _PARAMS = dict(
     num_queries=7,
     num_classes=1,
 )
-
 
 TRAIN_CFG: dict = dict(
     assigner=dict(type='MaskHungarianAssigner',
@@ -42,26 +18,12 @@ TRAIN_CFG: dict = dict(
 )
 
 
-def collate_fn(values):
-    res = defaultdict(list)
-    for value in values:
-        for k, v in value.items():
-            res[k].append(v)
-    res = {
-        'images': torch.stack(res['images']),
-        'points': torch.tensor(np.array(res['points'])),
-        'instances': torch.tensor(np.array(res['instances'])),
-        'data_info': res['data_info'],
-    }
-    return res
-
-
 def main(cfg):
-    model, model_cfg = init_model()
+    model, model_cfg = init_model(cfg)
     train(model, cfg, model_cfg)
 
 
-def init_model():
+def init_model(cfg):
     model_cfg = edict()
     model_cfg.crop_size = (224, 224)
     model_cfg.num_max_points = 24
@@ -102,8 +64,8 @@ def init_model():
         head_params=head_params,
     )
 
-    model.backbone.init_weights_from_pretrained("./weights/mae_pretrain_vit_base.pth")
-    model.to(device)
+    model.backbone.init_weights_from_pretrained(cfg.IMAGENET_PRETRAINED_MODELS.MAE_BASE)
+    model.to(cfg.device)
 
     return model, model_cfg
 
@@ -136,7 +98,7 @@ def train(model, cfg, model_cfg):
                                        max_num_merged_objects=2)
 
     trainset = CocoLvisDataset(
-        "./datasets/LVIS",
+        cfg.LVIS_v1_PATH,
         split='train',
         augmentator=train_augmentator,
         min_object_area=1000,
@@ -147,7 +109,7 @@ def train(model, cfg, model_cfg):
     )
 
     valset = CocoLvisDataset(
-        "./datasets/LVIS",
+        cfg.LVIS_v1_PATH,
         split='val',
         augmentator=val_augmentator,
         min_object_area=1000,
@@ -157,8 +119,8 @@ def train(model, cfg, model_cfg):
 
     optimizer_params = {'lr': 5e-4, 'betas': (0.9, 0.999), 'eps': 1e-8}
 
-    lr_scheduler = partial(torch.optim.lr_scheduler.MultiStepLR, milestones=[49, 55], gamma=0.1)
-
+    lr_scheduler = partial(torch.optim.lr_scheduler.MultiStepLR,
+                           milestones=[49, 55], gamma=0.1)
     trainer = ISTrainer(model, cfg, model_cfg, loss_cfg,
                         trainset, valset,
                         optimizer='adam',
@@ -168,6 +130,5 @@ def train(model, cfg, model_cfg):
                         image_dump_interval=3000,
                         metrics=[AdaptiveIoU()],
                         max_interactive_points=model_cfg.num_max_points,
-                        max_num_next_clicks=3,
-                        multi_output=True)
+                        max_num_next_clicks=3)
     trainer.run(num_epochs=55, validation=False)

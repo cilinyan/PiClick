@@ -2,6 +2,9 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import numpy as np
+import random
+from copy import deepcopy
 from isegm.utils.serialization import serialize
 from .is_model import ISModel
 from .modeling.models_vit import VisionTransformer, PatchEmbed
@@ -10,6 +13,7 @@ from .modeling.maskformer_helper.transformer import DetrTransformerDecoder
 from .modeling.maskformer_helper.positional_encoding import SinePositionalEncoding
 from .modeling.maskformer_helper.mask_hungarian_assigner import MaskHungarianAssigner
 from .modeling.maskformer_helper.mask_pseudo_sampler import MaskPseudoSampler
+from .modeling.maskformer_helper.misc import multi_apply
 
 from mmcv.cnn import Conv2d, caffe2_xavier_init
 
@@ -61,6 +65,38 @@ def select_max_score_mask(cls_scores_list, mask_preds_list, batch_first: bool = 
     indexes = indexes.reshape(-1, 1, 1, 1).repeat(1, 1, *mask_preds_list.shape[-2:])
     max_scores_masks = torch.gather(mask_preds_list, 1, indexes)
     return max_scores_masks
+
+
+def get_masks_by_points(points, data_info, source_mask) -> np.ndarray:
+    if isinstance(points, torch.Tensor):
+        points = points.cpu().numpy()
+    points_pos, points_neg = points.reshape((2, -1, 3)).astype(int)
+    layers = data_info['mask']
+    gt_mask = list()
+    gt_obj_ids = list()
+    for obj_id, info in data_info['object'].items():
+        layer_id, mask_id = info['mapping']
+        mask = np.array(layers[:, :, layer_id] == mask_id)
+        flag_pos = all((f == -1) or mask[x, y] for x, y, f in points_pos)
+        flag_neg = all((f == -1) or (not mask[x, y]) for x, y, f in points_neg)
+        if flag_pos and flag_neg:
+            gt_mask.append(np.array(deepcopy(mask), dtype=float))
+            gt_obj_ids.append(obj_id)
+    if (len(data_info['sample_object_ids']) > 1) or (data_info['sample_object_ids'][0] not in gt_obj_ids):
+        if isinstance(source_mask, torch.Tensor):
+            source_mask = np.squeeze(source_mask.cpu().numpy(), axis=0)
+        gt_mask.append(source_mask)
+    return np.array(gt_mask)
+
+
+def choice_mask(labels_list, mask_preds_list):  # -> B,
+    masks_choice = list()
+    for labels, mask_preds in zip(labels_list, mask_preds_list):
+        labels = labels.cpu().numpy()
+        indexes = [i for i, label in enumerate(labels) if label == 0]
+        idx = random.choice(indexes)
+        masks_choice.append(mask_preds[idx:idx + 1])
+    return torch.stack(masks_choice)
 
 
 class SimpleFPN(nn.Module):
@@ -187,6 +223,115 @@ class MaskFormerModel(ISModel):
             outputs['single_masks'] = select_max_score_mask(*outputs['instances'], batch_first=batch_first)
 
         return outputs
+
+    def mask_match(self, batch_data, gt_mask, output):
+        device = output['instances'][1].device
+        gt_masks = \
+            [get_masks_by_points(p, i, g) for p, i, g in zip(batch_data['points'], batch_data['data_info'], gt_mask)]
+        gt_labels = [torch.tensor([0] * m.shape[0], dtype=torch.int).to(device).long() for m in gt_masks]
+        gt_masks = [torch.tensor(g).long().to(device) for g in gt_masks]
+        cls_scores_list, mask_preds_list = output['instances']
+        labels_list, label_weights_list, mask_targets_list, mask_weights_list, num_total_pos, num_total_neg = \
+            self.get_targets(cls_scores_list[-1], mask_preds_list[-1], gt_labels, gt_masks)
+        return labels_list, label_weights_list, mask_targets_list, mask_weights_list, num_total_pos, num_total_neg
+
+    def get_targets(self, cls_scores_list, mask_preds_list, gt_labels_list, gt_masks_list):
+        """Compute classification and mask targets for all images for a decoder layer.
+
+        Args:
+            cls_scores_list (list[Tensor]): Mask score logits from a single
+                decoder layer for all images. Each with shape (num_queries,
+                cls_out_channels).
+            mask_preds_list (list[Tensor]): Mask logits from a single decoder
+                layer for all images. Each with shape (num_queries, h, w).
+            gt_labels_list (list[Tensor]): Ground truth class indices for all
+                images. Each with shape (n, ), n is the sum of number of stuff
+                type and number of instance in a image.
+            gt_masks_list (list[Tensor]): Ground truth mask for each image,
+                each with shape (n, h, w).
+            img_metas (list[dict]): List of image meta information.
+
+        Returns:
+            tuple[list[Tensor]]: a tuple containing the following targets.
+                - labels_list (list[Tensor]): Labels of all images.\
+                    Each with shape (num_queries, ).
+                - label_weights_list (list[Tensor]): Label weights\
+                    of all images. Each with shape (num_queries, ).
+                - mask_targets_list (list[Tensor]): Mask targets of\
+                    all images. Each with shape (num_queries, h, w).
+                - mask_weights_list (list[Tensor]): Mask weights of\
+                    all images. Each with shape (num_queries, ).
+                - num_total_pos (int): Number of positive samples in\
+                    all images.
+                - num_total_neg (int): Number of negative samples in\
+                    all images.
+        """
+        labels_list, label_weights_list, mask_targets_list, mask_weights_list, pos_inds_list, neg_inds_list = \
+            multi_apply(self._get_target_single, cls_scores_list, mask_preds_list, gt_labels_list, gt_masks_list)
+
+        num_total_pos = sum((inds.numel() for inds in pos_inds_list))
+        num_total_neg = sum((inds.numel() for inds in neg_inds_list))
+        return labels_list, label_weights_list, mask_targets_list, mask_weights_list, num_total_pos, num_total_neg
+
+    def _get_target_single(self, cls_score, mask_pred, gt_labels, gt_masks):
+        """Compute classification and mask targets for one image.
+
+        Args:
+            cls_score (Tensor): Mask score logits from a single decoder layer
+                for one image. Shape (num_queries, cls_out_channels).
+            mask_pred (Tensor): Mask logits for a single decoder layer for one
+                image. Shape (num_queries, h, w).
+            gt_labels (Tensor): Ground truth class indices for one image with
+                shape (n, ). n is the sum of number of stuff type and number
+                of instance in a image.
+            gt_masks (Tensor): Ground truth mask for each image, each with
+                shape (n, h, w).
+            img_metas (dict): Image informtation.
+
+        Returns:
+            tuple[Tensor]: a tuple containing the following for one image.
+                - labels (Tensor): Labels of each image.
+                    shape (num_queries, ).
+                - label_weights (Tensor): Label weights of each image.
+                    shape (num_queries, ).
+                - mask_targets (Tensor): Mask targets of each image.
+                    shape (num_queries, h, w).
+                - mask_weights (Tensor): Mask weights of each image.
+                    shape (num_queries, ).
+                - pos_inds (Tensor): Sampled positive indices for each image.
+                - neg_inds (Tensor): Sampled negative indices for each image.
+        """
+        target_shape = mask_pred.shape[-2:]
+        if gt_masks.shape[0] > 0:
+            gt_masks_downsampled = \
+                F.interpolate(gt_masks.unsqueeze(1).float(), target_shape, mode='nearest').squeeze(1).long()
+        else:
+            gt_masks_downsampled = gt_masks
+
+        # assign and sample
+        assign_result = self.assigner.assign(cls_score, mask_pred, gt_labels, gt_masks_downsampled)
+        sampling_result = self.sampler.sample(assign_result, mask_pred, gt_masks)
+        pos_inds = sampling_result.pos_inds
+        neg_inds = sampling_result.neg_inds
+
+        # label target
+        labels = gt_labels.new_full((self.num_queries,), self.num_classes, dtype=torch.long)
+        labels[pos_inds] = gt_labels[sampling_result.pos_assigned_gt_inds]
+        label_weights = gt_labels.new_ones(self.num_queries)
+
+        # mask target
+        mask_targets = gt_masks[sampling_result.pos_assigned_gt_inds]
+        mask_weights = mask_pred.new_zeros((self.num_queries,))
+        mask_weights[pos_inds] = 1.0
+
+        return labels, label_weights, mask_targets, mask_weights, pos_inds, neg_inds
+
+    def forward_for_iter(self, image, gt_mask, points, batch_data):
+        output = self(image, points, batch_first=False)  # output['instances']: NUM_LATER, BS, NC, H, W
+        labels_list, label_weights_list, mask_targets_list, mask_weights_list, num_total_pos, num_total_neg = \
+            self.mask_match(batch_data, gt_mask, output)
+        masks_choice = choice_mask(labels_list, output['instances'][1][-1])
+        return masks_choice
 
 
 class MaskFormerModelV2(ISModel):
