@@ -103,7 +103,7 @@ class DSample:
 
     @property
     def gt_mask(self):
-        assert len(self._objects) == 1
+        # assert len(self._objects) == 1
         return self.get_object_mask(self.objects_ids[0])
 
     @property
