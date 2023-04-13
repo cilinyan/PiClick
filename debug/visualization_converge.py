@@ -46,7 +46,7 @@ def main():
     fig, axs = plt.subplots(row, _IMG_PER_ROW, gridspec_kw={'height_ratios': [1] * row})
     plt.rc('font', family='Times New Roman')
     for idx, (ax, dataset) in enumerate(zip(axs.flatten(), _DRAW_DATASETS)):
-        x_list = range(1, 10)
+        x_list = list(range(1, 10))
         miou = fetch_data_by_dataset(dataset, x_list)
         for model, data in miou.items():
             ax.plot(x_list, data, label=model)
