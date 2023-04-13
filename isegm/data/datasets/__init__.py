@@ -10,3 +10,8 @@ from .sbd import SBDDataset, SBDEvaluationDataset
 from .images_dir import ImagesDirDataset
 from .ade20k import ADE20kDataset
 from .pascalvoc import PascalVocDataset
+
+from .hard import HARDDataset
+from .oai_zib import OAIZIBDataset
+from .ssTEM import ssTEMDataset
+from .brats import BraTSDataset
