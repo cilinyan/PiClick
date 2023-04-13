@@ -1,9 +1,22 @@
 import cv2
 import math
-import random
-import numpy as np
 from functools import lru_cache
 from .sample import DSample
+import random
+import numpy as np
+
+
+def points_reduce(points: list, remain_one: bool, base_prob: float = 0.7):
+    points_available = [p for p in points if p[2] != -1]
+    num_available = len(points_available)
+    weights = [base_prob ** i for i in range(num_available + int(not remain_one))]
+    sum_weights = sum(weights)
+    weights = [w / sum_weights for w in weights]
+    num_choice = np.random.choice(
+        list(range(int(remain_one), num_available + 1)), size=1, replace=False, p=weights
+    )[0]
+    points_choices = random.choices(points_available, k=num_choice)
+    return points_choices + [(-1, -1, -1)] * (len(points) - len(points_choices))
 
 
 class BasePointSampler:
@@ -76,7 +89,7 @@ class MultiPointSampler(BasePointSampler):
         self._selected_masks = pos_masks
 
         neg_mask_bg = np.logical_not(binary_gt_mask)
-        neg_mask_border = self._get_border_mask(binary_gt_mask)
+        neg_mask_border = self._get_border_mask(binary_gt_mask)  # not dilate
         if len(sample) <= len(self._selected_masks):
             neg_mask_other = neg_mask_bg
         else:
@@ -93,7 +106,13 @@ class MultiPointSampler(BasePointSampler):
     def _sample_mask(self, sample: DSample):
         root_obj_ids = sample.root_objects
 
-        if len(root_obj_ids) > 1 and random.random() < self.merge_objects_prob:
+        # 根据选择 select range 限制选中 id
+        root_obj_constrain = [i for i in root_obj_ids if i < sample.select_range]
+        if len(root_obj_constrain) != 0:
+            root_obj_ids = root_obj_constrain
+
+        merge_flag = len(root_obj_ids) > 1 and random.random() < self.merge_objects_prob
+        if merge_flag:
             max_selected_objects = min(len(root_obj_ids), self.max_num_merged_objects)
             num_selected_objects = np.random.randint(2, max_selected_objects + 1)
             random_ids = random.sample(root_obj_ids, num_selected_objects)
@@ -113,12 +132,35 @@ class MultiPointSampler(BasePointSampler):
             pos_segments.extend(obj_pos_segments)
             neg_segments.extend(obj_neg_segments)
 
+        # 标记用于产生 gt masks 的 ids
+        sample.sample_object_ids = random_ids
+
+        # 腐蚀缩小 mask
         pos_masks = [self._positive_erode(x) for x in pos_segments]
         neg_masks = [self._positive_erode(x) for x in neg_segments]
 
         return gt_mask, pos_masks, neg_masks
 
     def _sample_from_masks_layer(self, obj_id, sample: DSample):
+        """
+
+        Args:
+            obj_id:
+            sample:
+
+        Returns:
+
+        if not self.use_hierarchy:
+            gt_mask     original_mask
+            pos_masks   original_mask
+            neg_masks   None
+        else:
+            ... 改处逻辑不需要考虑
+            gt_mask     original_mask - child_mask(disabled)
+            pos_masks   original_mask - child_mask(small object)
+            neg_masks   original_mask - parent_mask
+
+        """
         objs_tree = sample._objects
 
         if not self.use_hierarchy:
@@ -177,7 +219,10 @@ class MultiPointSampler(BasePointSampler):
         neg_points = self._multi_mask_sample_points(neg_masks,
                                                     is_negative=[False] * len(self._neg_masks['required']) + [True])
 
-        return pos_points + neg_points
+        points = points_reduce(pos_points, remain_one=True, base_prob=.7) + \
+                 points_reduce(neg_points, remain_one=False, base_prob=.7)
+
+        return points
 
     def _multi_mask_sample_points(self, selected_masks, is_negative, with_first_click=False):
         selected_masks = selected_masks[:self.max_num_points]
@@ -258,7 +303,7 @@ class MultiPointSampler(BasePointSampler):
 
         kernel = np.ones((3, 3), np.uint8)
         eroded_mask = cv2.erode(mask.astype(np.uint8),
-                                kernel, iterations=self.positive_erode_iters).astype(np.bool)
+                                kernel, iterations=self.positive_erode_iters).astype(bool)
 
         if eroded_mask.sum() > 10:
             return eroded_mask
@@ -269,7 +314,7 @@ class MultiPointSampler(BasePointSampler):
         expand_r = int(np.ceil(self.expand_ratio * np.sqrt(mask.sum())))
         kernel = np.ones((3, 3), np.uint8)
         expanded_mask = cv2.dilate(mask.astype(np.uint8), kernel, iterations=expand_r)
-        expanded_mask[mask.astype(np.bool)] = 0
+        expanded_mask[mask.astype(bool)] = 0
         return expanded_mask
 
 

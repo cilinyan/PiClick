@@ -8,10 +8,10 @@ import numpy as np
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+from matplotlib.ticker import FormatStrFormatter
 
 sys.path.insert(0, '.')
 from isegm.utils.exp import load_config_file
-
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -60,6 +60,46 @@ def parse_args():
     return args, cfg
 
 
+model_name_mapper = {'sbd_vitb_epoch_54_NoBRS': 'Ours-ViT-B (SBD)', 
+                     'sbd_vitl_epoch_54_NoBRS': 'Ours-ViT-L (SBD)',
+                     'sbd_vith_epoch_54_NoBRS': 'Ours-ViT-H (SBD)',
+                     'cocolvis_vitb_epoch_54_NoBRS': 'Ours-ViT-B (C+L)',
+                     'cocolvis_vitl_epoch_54_NoBRS': 'Ours-ViT-L (C+L)',
+                     'cocolvis_vith_epoch_52_NoBRS': 'Ours-ViT-H (C+L)',
+                     '052_NoBRS': 'Ours-ViT-H (C+L)',
+                     'sbd_h18_itermask_NoBRS': 'RITM-HRNet18 (SBD)',
+                     'coco_lvis_h32_itermask_NoBRS': 'RITM-HRNet32 (C+L)',
+                     'cocolvis_segformer_b3_s2_FocalClick': 'FocalClick-SegF-B3 (C+L)',
+                     'cocolvis_segformer_b0_s2_FocalClick': 'FocalClick-SegF-B0 (C+L)',
+                     'sbd_cdnet_resnet34_CDNet': 'CDNet-ResNet-34 (SBD)',
+                     'cocolvis_cdnet_resnet34_CDNet': 'CDNet-ResNet-34 (C+L)'
+}
+
+color_style_mapper = {'Ours-ViT-B (SBD)': ('#0000ff',   '-'),
+                      'Ours-ViT-L (SBD)': ('#008000',   '-'),
+                      'Ours-ViT-H (SBD)': ('#ff0000',   '-'),
+                      'Ours-ViT-B (C+L)': ('#0080ff',   '-'),
+                      'Ours-ViT-L (C+L)': ('#8000ff',   '-'),
+                      'Ours-ViT-H (C+L)': ('#ff8000',   '-'),
+                      'RITM-HRNet18 (SBD)': ('#000000',   ':'),
+                      'RITM-HRNet32 (C+L)': ('#444444',   ':'),
+                      'FocalClick-SegF-B0 (C+L)': ('#888888',   ':'),
+                      'FocalClick-SegF-B3 (C+L)': ('#888888',   ':'),
+                      'CDNet-ResNet-34 (SBD)': ('', ':'),
+                      'CDNet-ResNet-34 (C+L)': ('', ':')
+                     }
+
+range_mapper = {'SBD': (65, 96, 3),
+                 'DAVIS': (66, 97, 3),
+                 'Pascal VOC': (66, 100, 3),
+                 'COCO_MVal': (60, 97, 3),
+                 'BraTS': (10, 100, 10),
+                 'OAIZIB': (0,85, 10),
+                 'ssTEM': (5, 100, 10),
+                 'GrabCut': (80, 100, 2),
+                 'Berkeley': (80, 100, 2)
+               }
+
 def main():
     args, cfg = parse_args()
 
@@ -70,16 +110,21 @@ def main():
     for file in files_list:
         with open(file, 'rb') as f:
             data = pickle.load(f)
-        data['all_ious'] = [x[:args.n_clicks] for x in data['all_ious']]
+        data['all_ious'] = [x[:] if args.n_clicks == -1 else x[:args.n_clicks] for x in data['all_ious']]
         aggregated_plot_data[data['dataset_name']][data['model_name']] = np.array(data['all_ious']).mean(0)
 
     for dataset_name, dataset_results in aggregated_plot_data.items():
         plt.figure(figsize=(12, 7))
 
         max_clicks = 0
+        min_val, max_val = 100, -1
         for model_name, model_results in dataset_results.items():
             if args.n_clicks != -1:
                 model_results = model_results[:args.n_clicks]
+            model_results = model_results * 100 
+
+            min_val = min(min_val, min(model_results))
+            max_val = max(max_val, max(model_results))
 
             n_clicks = len(model_results)
             max_clicks = max(max_clicks, n_clicks)
@@ -88,13 +133,27 @@ def main():
                                  for click_id in [1, 3, 5, 10, 20] if click_id <= len(model_results)])
             print(f'{model_name} on {dataset_name}:\n{miou_str}\n')
 
-            plt.plot(1 + np.arange(n_clicks), model_results, linewidth=2, label=model_name)
+            label = model_name_mapper[model_name] if model_name in model_name_mapper else model_name
 
-        plt.title(f'mIoU after every click for {dataset_name}', fontsize='x-large')
+            color, style = None, None
+            if label in color_style_mapper:
+                color, style = color_style_mapper[label]
+
+            plt.plot(1 + np.arange(n_clicks), model_results, linewidth=2, label=label, linestyle=style)
+
+        if dataset_name == 'PascalVOC':
+            dataset_name = 'Pascal VOC' 
+
+        plt.title(f'{dataset_name}', fontsize=22)
         plt.grid()
         plt.legend(loc=4, fontsize='x-large')
-        plt.yticks(fontsize='x-large')
-        plt.xticks(1 + np.arange(max_clicks), fontsize='x-large')
+
+        min_val, max_val, step = range_mapper[dataset_name]
+        plt.yticks(np.arange(min_val, max_val, step=step), fontsize='xx-large')
+        plt.xticks(1 + np.arange(max_clicks), fontsize='xx-large')
+        plt.xlabel('Number of Clicks', fontsize='xx-large')
+        plt.ylabel('mIoU score (%)', fontsize='xx-large')
+        plt.gca().yaxis.set_major_formatter(FormatStrFormatter('%.0f'))
 
         fig_path = get_target_file_path(args.plots_path, dataset_name)
         plt.savefig(str(fig_path))
@@ -114,7 +173,7 @@ def get_files_list(args, cfg):
     if args.folder is not None:
         files_list = Path(args.folder).glob('*.pickle')
     elif args.files is not None:
-        files_list = args.files
+        files_list = [Path(file) for file in args.files]
     elif args.model_dirs is not None:
         files_list = []
         for folder in args.model_dirs:

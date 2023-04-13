@@ -15,7 +15,7 @@ class InteractiveDemoApp(ttk.Frame):
     def __init__(self, master, args, model):
         super().__init__(master)
         self.master = master
-        master.title("Reviving Iterative Training with Mask Guidance for Interactive Segmentation")
+        master.title("SimpleClick Demo")
         master.withdraw()
         master.update_idletasks()
         x = (master.winfo_screenwidth() - master.winfo_reqwidth()) / 2
@@ -51,7 +51,7 @@ class InteractiveDemoApp(ttk.Frame):
                 'use_zoom_in': tk.BooleanVar(value=True),
                 'fixed_crop': tk.BooleanVar(value=True),
                 'skip_clicks': tk.IntVar(value=-1),
-                'target_size': tk.IntVar(value=min(400, self.limit_longest_size)),
+                'target_size': tk.IntVar(value=448), #tk.IntVar(value=min(400, self.limit_longest_size)),
                 'expansion_ratio': tk.DoubleVar(value=1.4)
             },
 
@@ -176,7 +176,7 @@ class InteractiveDemoApp(ttk.Frame):
         self.menubar.focus_set()
         if self._check_entry(self):
             filename = filedialog.askopenfilename(parent=self.master, filetypes=[
-                ("Images", "*.jpg *.jpeg *.png *.bmp *.tiff"),
+                ("Images", "*.jpg *.jpeg *.png *.bmp *.tiff *.tif"),
                 ("All files", "*.*"),
             ], title="Chose an image")
 

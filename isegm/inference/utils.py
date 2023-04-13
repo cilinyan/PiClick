@@ -1,6 +1,5 @@
 from datetime import timedelta
 from pathlib import Path
-
 import torch
 import numpy as np
 
@@ -19,24 +18,25 @@ def get_time_metrics(all_ious, elapsed_time):
     return mean_spc, mean_spi
 
 
-def load_is_model(checkpoint, device, **kwargs):
+def load_is_model(checkpoint, device, eval_ritm, **kwargs):
     if isinstance(checkpoint, (str, Path)):
         state_dict = torch.load(checkpoint, map_location='cpu')
+        # print("Load pre-trained checkpoint from: %s" % checkpoint)
     else:
         state_dict = checkpoint
 
     if isinstance(state_dict, list):
-        model = load_single_is_model(state_dict[0], device, **kwargs)
-        models = [load_single_is_model(x, device, **kwargs) for x in state_dict]
+        model = load_single_is_model(state_dict[0], device, eval_ritm, **kwargs)
+        models = [load_single_is_model(x, device, eval_ritm, **kwargs) for x in state_dict]
 
         return model, models
     else:
-        return load_single_is_model(state_dict, device, **kwargs)
+        return load_single_is_model(state_dict, device, eval_ritm, **kwargs)
 
 
-def load_single_is_model(state_dict, device, **kwargs):
-    model = load_model(state_dict['config'], **kwargs)
-    model.load_state_dict(state_dict['state_dict'], strict=False)
+def load_single_is_model(state_dict, device, eval_ritm, **kwargs):
+    model = load_model(state_dict['config'], eval_ritm, **kwargs)
+    model.load_state_dict(state_dict['state_dict'], strict=True)
 
     for param in model.parameters():
         param.requires_grad = False
@@ -91,18 +91,20 @@ def compute_noc_metric(all_ious, iou_thrs, max_clicks=20):
         return np.argmax(vals) + 1 if np.any(vals) else max_clicks
 
     noc_list = []
+    noc_list_std = []
     over_max_list = []
     for iou_thr in iou_thrs:
-        scores_arr = np.array([_get_noc(iou_arr, iou_thr)
-                               for iou_arr in all_ious], dtype=np.int)
+        scores_arr = np.array([_get_noc(iou_arr, iou_thr) for iou_arr in all_ious], dtype=int)
 
         score = scores_arr.mean()
+        score_std = scores_arr.std()
         over_max = (scores_arr == max_clicks).sum()
 
         noc_list.append(score)
+        noc_list_std.append(score_std)
         over_max_list.append(over_max)
 
-    return noc_list, over_max_list
+    return noc_list, noc_list_std, over_max_list
 
 
 def find_checkpoint(weights_folder, checkpoint_name):
@@ -132,7 +134,7 @@ def get_results_table(noc_list, over_max_list, brs_type, dataset_name, mean_spc,
                       n_clicks=20, model_name=None):
     table_header = (f'|{"BRS Type":^13}|{"Dataset":^11}|'
                     f'{"NoC@80%":^9}|{"NoC@85%":^9}|{"NoC@90%":^9}|'
-                    f'{">="+str(n_clicks)+"@85%":^9}|{">="+str(n_clicks)+"@90%":^9}|'
+                    f'{">=" + str(n_clicks) + "@85%":^9}|{">=" + str(n_clicks) + "@90%":^9}|'
                     f'{"SPC,s":^7}|{"Time":^9}|')
     row_width = len(table_header)
 
