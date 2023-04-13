@@ -7,7 +7,7 @@ from isegm.model.ops import DistMaps, BatchImageNormalize, ScaleLayer
 
 class ISModel(nn.Module):
     def __init__(self, with_aux_output=False, norm_radius=5, use_disks=False, cpu_dist_maps=False,
-                 use_rgb_conv=False, use_leaky_relu=False, # the two arguments only used for RITM
+                 use_rgb_conv=False, use_leaky_relu=False,  # the two arguments only used for RITM
                  with_prev_mask=False, norm_mean_std=([.485, .456, .406], [.229, .224, .225])):
         super().__init__()
 
@@ -31,12 +31,12 @@ class ISModel(nn.Module):
             ]
             self.maps_transform = nn.Sequential(*mt_layers)
         else:
-            self.maps_transform=nn.Identity()
+            self.maps_transform = nn.Identity()
 
         self.dist_maps = DistMaps(norm_radius=norm_radius, spatial_scale=1.0,
                                   cpu_mode=cpu_dist_maps, use_disks=use_disks)
 
-    def forward(self, image, points):
+    def forward(self, image, points, **kwargs):
         image, prev_mask = self.prepare_input(image)
         coord_features = self.get_coord_features(image, prev_mask, points)
         coord_features = self.maps_transform(coord_features)
@@ -46,7 +46,7 @@ class ISModel(nn.Module):
                                                          mode='bilinear', align_corners=True)
         if self.with_aux_output:
             outputs['instances_aux'] = nn.functional.interpolate(outputs['instances_aux'], size=image.size()[2:],
-                                                             mode='bilinear', align_corners=True)
+                                                                 mode='bilinear', align_corners=True)
 
         return outputs
 
