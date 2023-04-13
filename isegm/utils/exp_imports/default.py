@@ -14,7 +14,3 @@ from isegm.model import initializer
 
 from isegm.model.is_hrnet_model import HRNetModel
 from isegm.model.is_deeplab_model import DeeplabModel
-from isegm.model.is_segformer_model import SegformerModel
-from isegm.model.is_hrformer_model import HRFormerModel
-from isegm.model.is_swinformer_model import SwinformerModel
-from isegm.model.is_plainvit_model import PlainVitModel

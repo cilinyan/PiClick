@@ -2,27 +2,45 @@ import torch
 import torch.nn as nn
 import numpy as np
 
-from isegm.model.ops import DistMaps, BatchImageNormalize, ScaleLayer
+from isegm.model.ops import DistMaps, ScaleLayer, BatchImageNormalize
+from isegm.model.modifiers import LRMult
 
 
 class ISModel(nn.Module):
-    def __init__(self, with_aux_output=False, norm_radius=5, use_disks=False, cpu_dist_maps=False,
-                 use_rgb_conv=False, use_leaky_relu=False, # the two arguments only used for RITM
-                 with_prev_mask=False, norm_mean_std=([.485, .456, .406], [.229, .224, .225])):
+    def __init__(self, use_rgb_conv=True, with_aux_output=False,
+                 norm_radius=260, use_disks=False, cpu_dist_maps=False,
+                 clicks_groups=None, with_prev_mask=False, use_leaky_relu=False,
+                 binary_prev_mask=False, conv_extend=False, norm_layer=nn.BatchNorm2d,
+                 norm_mean_std=([.485, .456, .406], [.229, .224, .225])):
         super().__init__()
-
         self.with_aux_output = with_aux_output
+        self.clicks_groups = clicks_groups
         self.with_prev_mask = with_prev_mask
+        self.binary_prev_mask = binary_prev_mask
         self.normalization = BatchImageNormalize(norm_mean_std[0], norm_mean_std[1])
 
         self.coord_feature_ch = 2
+        if clicks_groups is not None:
+            self.coord_feature_ch *= len(clicks_groups)
+
         if self.with_prev_mask:
             self.coord_feature_ch += 1
 
         if use_rgb_conv:
-            # Only RITM models need to transform the coordinate features, though they don't use 
-            # exact 'rgb_conv'. We keep 'use_rgb_conv' only for compatible issues.
-            # The simpleclick models use a patch embedding layer instead 
+            rgb_conv_layers = [
+                nn.Conv2d(in_channels=3 + self.coord_feature_ch, out_channels=6 + self.coord_feature_ch, kernel_size=1),
+                norm_layer(6 + self.coord_feature_ch),
+                nn.LeakyReLU(negative_slope=0.2) if use_leaky_relu else nn.ReLU(inplace=True),
+                nn.Conv2d(in_channels=6 + self.coord_feature_ch, out_channels=3, kernel_size=1)
+            ]
+            self.rgb_conv = nn.Sequential(*rgb_conv_layers)
+        elif conv_extend:
+            self.rgb_conv = None
+            self.maps_transform = nn.Conv2d(in_channels=self.coord_feature_ch, out_channels=64,
+                                            kernel_size=3, stride=2, padding=1)
+            self.maps_transform.apply(LRMult(0.1))
+        else:
+            self.rgb_conv = None
             mt_layers = [
                 nn.Conv2d(in_channels=self.coord_feature_ch, out_channels=16, kernel_size=1),
                 nn.LeakyReLU(negative_slope=0.2) if use_leaky_relu else nn.ReLU(inplace=True),
@@ -30,17 +48,26 @@ class ISModel(nn.Module):
                 ScaleLayer(init_value=0.05, lr_mult=1)
             ]
             self.maps_transform = nn.Sequential(*mt_layers)
-        else:
-            self.maps_transform=nn.Identity()
 
-        self.dist_maps = DistMaps(norm_radius=norm_radius, spatial_scale=1.0,
-                                  cpu_mode=cpu_dist_maps, use_disks=use_disks)
+        if self.clicks_groups is not None:
+            self.dist_maps = nn.ModuleList()
+            for click_radius in self.clicks_groups:
+                self.dist_maps.append(DistMaps(norm_radius=click_radius, spatial_scale=1.0,
+                                               cpu_mode=cpu_dist_maps, use_disks=use_disks))
+        else:
+            self.dist_maps = DistMaps(norm_radius=norm_radius, spatial_scale=1.0,
+                                      cpu_mode=cpu_dist_maps, use_disks=use_disks)
 
     def forward(self, image, points):
         image, prev_mask = self.prepare_input(image)
         coord_features = self.get_coord_features(image, prev_mask, points)
-        coord_features = self.maps_transform(coord_features)
-        outputs = self.backbone_forward(image, coord_features)
+
+        if self.rgb_conv is not None:
+            x = self.rgb_conv(torch.cat((image, coord_features), dim=1))
+            outputs = self.backbone_forward(x)
+        else:
+            coord_features = self.maps_transform(coord_features)
+            outputs = self.backbone_forward(image, coord_features)
 
         outputs['instances'] = nn.functional.interpolate(outputs['instances'], size=image.size()[2:],
                                                          mode='bilinear', align_corners=True)
@@ -55,6 +82,8 @@ class ISModel(nn.Module):
         if self.with_prev_mask:
             prev_mask = image[:, 3:, :, :]
             image = image[:, :3, :, :]
+            if self.binary_prev_mask:
+                prev_mask = (prev_mask > 0.5).float()
 
         image = self.normalization(image)
         return image, prev_mask
@@ -63,7 +92,13 @@ class ISModel(nn.Module):
         raise NotImplementedError
 
     def get_coord_features(self, image, prev_mask, points):
-        coord_features = self.dist_maps(image, points)
+        if self.clicks_groups is not None:
+            points_groups = split_points_by_order(points, groups=(2,) + (1, ) * (len(self.clicks_groups) - 2) + (-1,))
+            coord_features = [dist_map(image, pg) for dist_map, pg in zip(self.dist_maps, points_groups)]
+            coord_features = torch.cat(coord_features, dim=1)
+        else:
+            coord_features = self.dist_maps(image, points)
+
         if prev_mask is not None:
             coord_features = torch.cat((prev_mask, coord_features), dim=1)
 

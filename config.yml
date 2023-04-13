@@ -1,46 +1,24 @@
 INTERACTIVE_MODELS_PATH: "./weights"
-EXPS_PATH: "./weights/models"
-
-# (click) [clyan@qsh2-search-mstrain-1 ClickClick]$ ls datasets/
-# ADE20K  Berkeley  BraTS20  coco17  COCO_MVal  DAVIS  GrabCut  imagenet1k  LVIS  OAI_ZIB  SBD  VOC
+EXPS_PATH: "./experiments"
 
 # Evaluation datasets
 GRABCUT_PATH: "./datasets/GrabCut"
 BERKELEY_PATH: "./datasets/Berkeley"
 DAVIS_PATH: "./datasets/DAVIS"
 COCO_MVAL_PATH: "./datasets/COCO_MVal"
-BraTS_PATH: "./datasets/BraTS20"
-ssTEM_PATH: "./datasets/ssTEM/groundtruth-drosophila-vnc-master/stack1"
-OAIZIB_PATH: "./datasets/OAI_ZIB"
-OAI_PATH: "./datasets/OAI"
-HARD_PATH: "./datasets/HARD"
-
 
 # Train datasets
-SBD_PATH: "./datasets/SBD/benchmark_RELEASE/dataset/"
-COCO_PATH: "./datasets/LVIS"
-LVIS_v1_PATH: "./datasets/LVIS"
+SBD_PATH: "./datasets/SBD"
+COCO_PATH: "./datasets/coco2017"
+LVIS_PATH: "./datasets/LVIS"
 OPENIMAGES_PATH: "./datasets/OpenImages"
-PASCALVOC_PATH: "./datasets/VOC/VOCdevkit/VOC2012"
+PASCALVOC_PATH: "./datasets/PascalVOC"
 ADE20K_PATH: "./datasets/ADE20K"
 
 # You can download the weights for HRNet from the repository:
 # https://github.com/HRNet/HRNet-Image-Classification
 IMAGENET_PRETRAINED_MODELS:
-  HRNETV2_W18: "./weights/hrnetv2_w18_imagenet_pretrained.pth"
-  HRNETV2_W32: "./weights/hrnetv2_w32_imagenet_pretrained.pth"
-  HRNETV2_W40: "./weights/hrnetv2_w40_imagenet_pretrained.pth"
-  HRNETV2_W48: "./weights/hrnetv2_w48_imagenet_pretrained.pth"
-  HRNETV2_W64: "./weights/hrnetv2_w64_imagenet_pretrained.pth"
-  MIT_B5: "./weights/mit_b5_converted.pth"
-  MIT_B4: "./weights/mit_b4_converted.pth"
-  MIT_B3: "./weights/mit_b3_converted.pth"
-  MIT_B2: "./weights/mit_b2_converted.pth"
-  MIT_B1: "./weights/mit_b1_converted.pth"
-  MIT_B0: "./weights/mit_b0_converted.pth"
-  HRF_BASE: "./weights/hrt_base.pth"
-  SWIN_BASE: "./weights/swin_base_patch4_window12_384_22k.pth"
-  SWIN_LARGE: "./weights/swin_large_patch4_window12_384_22k.pth"
-  MAE_BASE: "./weights/mae_pretrain_vit_base.pth"
-  MAE_LARGE: "./weights/mae_pretrain_vit_large.pth"
-  MAE_HUGE: "./weights/mae_pretrain_vit_huge.pth"
+  HRNETV2_W18: "./pretrained_models/hrnetv2_w18_imagenet_pretrained.pth"
+  HRNETV2_W32: "./pretrained_models/hrnetv2_w32_imagenet_pretrained.pth"
+  HRNETV2_W40: "./pretrained_models/hrnetv2_w40_imagenet_pretrained.pth"
+  HRNETV2_W48: "./pretrained_models/hrnetv2_w48_imagenet_pretrained.pth"

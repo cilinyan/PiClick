@@ -101,10 +101,10 @@ class DSample:
     def objects_ids(self):
         return list(self._objects.keys())
 
-    # @property
-    def gt_mask(self, object_id=0):
-        # assert len(self._objects) == 1
-        return self.get_object_mask(self.objects_ids[object_id])
+    @property
+    def gt_mask(self):
+        assert len(self._objects) == 1
+        return self.get_object_mask(self.objects_ids[0])
 
     @property
     def root_objects(self):

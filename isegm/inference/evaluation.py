@@ -20,10 +20,9 @@ def evaluate_dataset(dataset, predictor, **kwargs):
     for index in tqdm(range(len(dataset)), leave=False):
         sample = dataset.get_sample(index)
 
-        for object_id in sample.objects_ids:
-            _, sample_ious, _ = evaluate_sample(sample.image, sample.gt_mask(object_id), predictor,
-                                                sample_id=index, **kwargs)
-            all_ious.append(sample_ious)
+        _, sample_ious, _ = evaluate_sample(sample.image, sample.gt_mask, predictor,
+                                            sample_id=index, **kwargs)
+        all_ious.append(sample_ious)
     end_time = time()
     elapsed_time = end_time - start_time
 

@@ -1,6 +1,3 @@
-import matplotlib
-matplotlib.use('Agg')
-
 import argparse
 import tkinter as tk
 
@@ -10,12 +7,13 @@ from isegm.utils import exp
 from isegm.inference import utils
 from interactive_demo.app import InteractiveDemoApp
 
+
 def main():
     args, cfg = parse_args()
 
     torch.backends.cudnn.deterministic = True
     checkpoint_path = utils.find_checkpoint(cfg.INTERACTIVE_MODELS_PATH, args.checkpoint)
-    model = utils.load_is_model(checkpoint_path, args.device, args.eval_ritm, cpu_dist_maps=True)
+    model = utils.load_is_model(checkpoint_path, args.device, cpu_dist_maps=True)
 
     root = tk.Tk()
     root.minsize(960, 480)
@@ -44,8 +42,6 @@ def parse_args():
 
     parser.add_argument('--cfg', type=str, default="config.yml",
                         help='The path to the config file.')
-
-    parser.add_argument('--eval-ritm', action='store_true', default=False)
 
     args = parser.parse_args()
     if args.cpu:

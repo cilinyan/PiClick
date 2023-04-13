@@ -7,14 +7,12 @@ import cv2
 import torch
 import numpy as np
 
-
 sys.path.insert(0, '.')
 from isegm.inference import utils
 from isegm.utils.exp import load_config_file
 from isegm.utils.vis import draw_probmap, draw_with_blend_and_clicks
 from isegm.inference.predictors import get_predictor
 from isegm.inference.evaluation import evaluate_dataset
-from isegm.model.modeling.pos_embed import interpolate_pos_embed_inference
 
 
 def parse_args():
@@ -33,7 +31,7 @@ def parse_args():
                                    help='The relative path to the experiment with checkpoints.'
                                         '(relative to cfg.EXPS_PATH)')
 
-    parser.add_argument('--datasets', type=str, default='GrabCut,Berkeley,DAVIS,PascalVOC,SBD,BraTS,ssTEM,OAIZIB,COCO_MVal',
+    parser.add_argument('--datasets', type=str, default='GrabCut,Berkeley,DAVIS,SBD,PascalVOC',
                         help='List of datasets on which the model should be tested. '
                              'Datasets are separated by a comma. Possible choices: '
                              'GrabCut, Berkeley, DAVIS, SBD, PascalVOC')
@@ -58,9 +56,8 @@ def parse_args():
                         help='The segmentation mask is obtained from the probability outputs using this threshold.')
     parser.add_argument('--clicks-limit', type=int, default=None)
     parser.add_argument('--eval-mode', type=str, default='cvpr',
-                        help="Possible choices: cvpr, fixed<number>, or fixed<number>,<number>,(e.g. fixed400, fixed400,600).")
+                        help='Possible choices: cvpr, fixed<number> (e.g. fixed400, fixed600).')
 
-    parser.add_argument('--eval-ritm', action='store_true', default=False)
     parser.add_argument('--save-ious', action='store_true', default=False)
     parser.add_argument('--print-ious', action='store_true', default=False)
     parser.add_argument('--vis-preds', action='store_true', default=False)
@@ -107,14 +104,9 @@ def main():
         dataset = utils.get_dataset(dataset_name, cfg)
 
         for checkpoint_path in checkpoints_list:
-            model = utils.load_is_model(checkpoint_path, args.device, args.eval_ritm)
+            model = utils.load_is_model(checkpoint_path, args.device)
 
-            predictor_params, zoomin_params = get_predictor_and_zoomin_params(args, dataset_name, eval_ritm=args.eval_ritm)
-
-            # For SimpleClick models, we usually need to interpolate the positional embedding
-            if not args.eval_ritm:
-                interpolate_pos_embed_inference(model.backbone, zoomin_params['target_size'], args.device)
-
+            predictor_params, zoomin_params = get_predictor_and_zoomin_params(args, dataset_name)
             predictor = get_predictor(model, args.mode, args.device,
                                       prob_thresh=args.thresh,
                                       predictor_params=predictor_params,
@@ -139,12 +131,8 @@ def main():
                          print_header=print_header)
             print_header = False
 
-    # # uncomment the following lines for memory analysis
-    # print("torch.cuda.memory_allocated: %fGB"%(torch.cuda.memory_allocated(0)/1024/1024/1024))
-    # print("torch.cuda.memory_reserved: %fGB"%(torch.cuda.memory_reserved(0)/1024/1024/1024))
-    # print("torch.cuda.max_memory_reserved: %fGB"%(torch.cuda.max_memory_reserved(0)/1024/1024/1024))
 
-def get_predictor_and_zoomin_params(args, dataset_name, apply_zoom_in=True, eval_ritm=False):
+def get_predictor_and_zoomin_params(args, dataset_name):
     predictor_params = {}
 
     if args.clicks_limit is not None:
@@ -152,39 +140,18 @@ def get_predictor_and_zoomin_params(args, dataset_name, apply_zoom_in=True, eval
             args.clicks_limit = args.n_clicks
         predictor_params['net_clicks_limit'] = args.clicks_limit
 
-    zoom_in_params = None
-    if apply_zoom_in and eval_ritm:
-        if args.eval_mode == 'cvpr':
-            zoom_in_params = {
-                'target_size': 600 if dataset_name == 'DAVIS' else 400
-            }
-        elif args.eval_mode.startswith('fixed'):
-            crop_size = int(args.eval_mode[5:])
-            zoom_in_params = {
-                'skip_clicks': -1,
-                'target_size': (crop_size, crop_size)
-            }
-        else:
-            raise NotImplementedError
-
-    if apply_zoom_in and not eval_ritm:
-        if args.eval_mode == 'cvpr':
-            zoom_in_params = {
-                'skip_clicks': -1,
-                'target_size': (672, 672) if dataset_name == 'DAVIS' else (448, 448)
-            }
-        elif args.eval_mode.startswith('fixed'):
-            crop_size = args.eval_mode.split(',')
-            crop_size_h = int(crop_size[0][5:])
-            crop_size_w = crop_size_h
-            if len(crop_size) == 2:
-                crop_size_w = int(crop_size[1])
-            zoom_in_params = {
-                'skip_clicks': -1,
-                'target_size': (crop_size_h, crop_size_w)
-            }
-        else:
-            raise NotImplementedError
+    if args.eval_mode == 'cvpr':
+        zoom_in_params = {
+            'target_size': 600 if dataset_name == 'DAVIS' else 400
+        }
+    elif args.eval_mode.startswith('fixed'):
+        crop_size = int(args.eval_mode[5:])
+        zoom_in_params = {
+            'skip_clicks': -1,
+            'target_size': (crop_size, crop_size)
+        }
+    else:
+        raise NotImplementedError
 
     return predictor_params, zoom_in_params
 
@@ -226,9 +193,7 @@ def save_results(args, row_name, dataset_name, logs_path, logs_prefix, dataset_r
     mean_spc, mean_spi = utils.get_time_metrics(all_ious, elapsed_time)
 
     iou_thrs = np.arange(0.8, min(0.95, args.target_iou) + 0.001, 0.05).tolist()
-    noc_list, noc_list_std, over_max_list = utils.compute_noc_metric(all_ious, iou_thrs=iou_thrs, max_clicks=args.n_clicks)
-
-    # print(noc_list, noc_list_std)
+    noc_list, over_max_list = utils.compute_noc_metric(all_ious, iou_thrs=iou_thrs, max_clicks=args.n_clicks)
 
     row_name = 'last' if row_name == 'last_checkpoint' else row_name
     model_name = str(logs_path.relative_to(args.logs_path)) + ':' + logs_prefix if logs_prefix else logs_path.stem
@@ -240,12 +205,12 @@ def save_results(args, row_name, dataset_name, logs_path, logs_prefix, dataset_r
         min_num_clicks = min(len(x) for x in all_ious)
         mean_ious = np.array([x[:min_num_clicks] for x in all_ious]).mean(axis=0)
         miou_str = ' '.join([f'mIoU@{click_id}={mean_ious[click_id - 1]:.2%};'
-                             for click_id in [_ for _ in range(1, 21)] if click_id <= min_num_clicks])
+                             for click_id in [1, 2, 3, 5, 10, 20] if click_id <= min_num_clicks])
         table_row += '; ' + miou_str
     else:
         target_iou_int = int(args.target_iou * 100)
         if target_iou_int not in [80, 85, 90]:
-            noc_list, _, over_max_list = utils.compute_noc_metric(all_ious, iou_thrs=[args.target_iou],
+            noc_list, over_max_list = utils.compute_noc_metric(all_ious, iou_thrs=[args.target_iou],
                                                                max_clicks=args.n_clicks)
             table_row += f' NoC@{args.target_iou:.1%} = {noc_list[0]:.2f};'
             table_row += f' >={args.n_clicks}@{args.target_iou:.1%} = {over_max_list[0]}'
