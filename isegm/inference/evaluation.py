@@ -41,7 +41,7 @@ def evaluate_sample(image, gt_mask, predictor, max_iou_thr,
         predictor.set_input_image(image)
 
         for click_indx in range(max_clicks):
-            # sleep(0.3)
+            sleep(0.01)
             clicker.make_next_click(pred_mask)
             pred_probs = predictor.get_prediction(clicker)
             pred_mask = pred_probs > pred_thr
