@@ -205,7 +205,7 @@ def save_results(args, row_name, dataset_name, logs_path, logs_prefix, dataset_r
         min_num_clicks = min(len(x) for x in all_ious)
         mean_ious = np.array([x[:min_num_clicks] for x in all_ious]).mean(axis=0)
         miou_str = ' '.join([f'mIoU@{click_id}={mean_ious[click_id - 1]:.2%};'
-                             for click_id in [1, 2, 3, 5, 10, 20] if click_id <= min_num_clicks])
+                             for click_id in list(range(1, 11)) if click_id <= min_num_clicks])
         table_row += '; ' + miou_str
     else:
         target_iou_int = int(args.target_iou * 100)
