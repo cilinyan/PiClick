@@ -182,7 +182,7 @@ def get_checkpoints_list_and_logs_path(args, cfg):
         logs_path = args.logs_path / exp_path.relative_to(cfg.EXPS_PATH)
     else:
         checkpoints_list = [Path(utils.find_checkpoint(cfg.INTERACTIVE_MODELS_PATH, args.checkpoint))]
-        logs_path = args.logs_path / 'others' / checkpoints_list[0].stem
+        logs_path = args.logs_path / 'ritm' / checkpoints_list[0].stem
 
     return checkpoints_list, logs_path, logs_prefix
 
