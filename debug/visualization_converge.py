@@ -12,6 +12,7 @@ _MIOU_RESULTS = {
         'Berkeley': 'mIoU@1=90.50%; mIoU@2=94.39%; mIoU@3=95.42%; mIoU@4=95.73%; mIoU@5=95.95%; mIoU@6=96.02%; mIoU@7=96.05%; mIoU@8=96.17%; mIoU@9=96.17%; mIoU@10=96.17%;',
         'DAVIS': 'mIoU@1=81.20%; mIoU@2=88.32%; mIoU@3=90.29%; mIoU@4=91.19%; mIoU@5=91.82%; mIoU@6=92.10%; mIoU@7=92.32%; mIoU@8=92.63%; mIoU@9=92.80%; mIoU@10=92.89%;',
         'PascalVOC': 'mIoU@1=83.51%; mIoU@2=92.10%; mIoU@3=94.68%; mIoU@4=95.95%; mIoU@5=96.59%; mIoU@6=97.02%; mIoU@7=97.36%; mIoU@8=97.63%; mIoU@9=97.84%; mIoU@10=98.01%;',
+        'SBD': 'mIoU@1=77.51%; mIoU@2=85.15%; mIoU@3=87.71%; mIoU@4=89.05%; mIoU@5=89.89%; mIoU@6=90.51%; mIoU@7=90.91%; mIoU@8=91.20%; mIoU@9=91.47%; mIoU@10=91.66%;',
         'COCO_MVal': 'mIoU@1=84.01%; mIoU@2=90.65%; mIoU@3=92.26%; mIoU@4=93.06%; mIoU@5=93.53%; mIoU@6=93.96%; mIoU@7=94.22%; mIoU@8=94.37%; mIoU@9=94.42%; mIoU@10=94.44%;',
         'ssTEM': 'mIoU@1=39.59%; mIoU@2=81.50%; mIoU@3=88.52%; mIoU@4=90.89%; mIoU@5=92.13%; mIoU@6=92.83%; mIoU@7=93.32%; mIoU@8=93.61%; mIoU@9=93.84%; mIoU@10=93.94%;',
         'BraTS': 'mIoU@1=52.28%; mIoU@2=68.16%; mIoU@3=75.68%; mIoU@4=79.67%; mIoU@5=82.99%; mIoU@6=85.07%; mIoU@7=86.46%; mIoU@8=87.41%; mIoU@9=88.03%; mIoU@10=88.32%;',
@@ -21,7 +22,9 @@ _MIOU_RESULTS = {
         'GrabCut': 'mIoU@1=88.33%; mIoU@2=91.92%; mIoU@3=95.56%; mIoU@4=96.15%; mIoU@5=96.97%; mIoU@6=97.32%; mIoU@7=97.70%; mIoU@8=97.98%; mIoU@9=98.11%; mIoU@10=98.24%;',
         'Berkeley': 'mIoU@1=83.37%; mIoU@2=90.98%; mIoU@3=94.16%; mIoU@4=95.17%; mIoU@5=95.55%; mIoU@6=95.74%; mIoU@7=95.88%; mIoU@8=96.00%; mIoU@9=96.09%; mIoU@10=96.18%;',
         'DAVIS': 'mIoU@1=71.35%; mIoU@2=80.33%; mIoU@3=84.72%; mIoU@4=87.19%; mIoU@5=88.76%; mIoU@6=89.78%; mIoU@7=90.41%; mIoU@8=91.06%; mIoU@9=91.49%; mIoU@10=91.73%;',
-        'SBD': 'mIoU@1=71.44%; mIoU@2=81.48%; mIoU@3=85.71%; mIoU@4=87.99%; mIoU@5=89.31%; mIoU@6=90.18%; mIoU@7=90.77%; mIoU@8=91.24%; mIoU@9=91.61%; mIoU@10=91.91%;'
+        'SBD': 'mIoU@1=71.44%; mIoU@2=81.48%; mIoU@3=85.71%; mIoU@4=87.99%; mIoU@5=89.31%; mIoU@6=90.18%; mIoU@7=90.77%; mIoU@8=91.24%; mIoU@9=91.61%; mIoU@10=91.91%;',
+        'COCO_MVal': 'mIoU@1=76.67%; mIoU@2=86.93%; mIoU@3=90.97%; mIoU@4=92.86%; mIoU@5=93.84%; mIoU@6=94.46%; mIoU@7=94.85%; mIoU@8=95.08%; mIoU@9=95.30%; mIoU@10=95.47%;',
+        'BraTS': 'mIoU@1=8.55%; mIoU@2=23.49%; mIoU@3=46.38%; mIoU@4=64.47%; mIoU@5=73.37%; mIoU@6=79.35%; mIoU@7=83.07%; mIoU@8=85.48%; mIoU@9=86.71%; mIoU@10=87.86%;',
     },
     'RITM-HRNet32': {
         'GrabCut': 'mIoU@1=87.69%; mIoU@2=91.89%; mIoU@3=94.91%; mIoU@4=95.86%; mIoU@5=97.03%; mIoU@6=97.39%; mIoU@7=97.76%; mIoU@8=97.93%; mIoU@9=98.08%; mIoU@10=98.16%;',
