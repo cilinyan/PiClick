@@ -206,7 +206,7 @@ def draw_normal(
         for model, data in miou.items():
             ax.plot(x_list, data, label=model, )  # **_DRAW_PARAMS[model]
             ax.legend(loc='lower right')
-        t = ax.set_title(dataset.replace('_', ' '))
+        ax.set_title(dataset.replace('_', ' '))
         ax.set_xlabel('Number of Clicks')
         ax.set_ylabel('mIoU Score (%)')
         # ax.legend(loc='lower right')
@@ -214,6 +214,16 @@ def draw_normal(
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
         if idx == len(datasets_draw) - 2:
+            pos = ax.title.get_position()
+            title_font = ax.title.get_font()
+            ax.text(pos[0], pos[1]+0.019,
+                    dataset.replace('_', ' '),
+                    ha='center', va='bottom',
+                    # color="r",
+                    fontsize=title_font.get_size(),
+                    fontfamily=title_font.get_family(),
+                    fontweight=title_font.get_weight(),
+                    transform=ax.transAxes)
             ax.set_title('(c) convergence analysis', y=-.27)
     plt.subplots_adjust(left=None, bottom=0.13, right=None, top=None, wspace=0.27, hspace=0.34)
     # fig.legend(loc='lower center', ncol=4, bbox_to_anchor=(0.5, 0), prop={"size": 10})
