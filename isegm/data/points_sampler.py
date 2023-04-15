@@ -47,7 +47,7 @@ class MultiPointSampler(BasePointSampler):
                  merge_objects_prob=0.0, max_num_merged_objects=2,
                  use_hierarchy=False, soft_targets=False,
                  first_click_center=False, only_one_first_click=False,
-                 sfc_inner_k=1.7, sfc_full_inner_prob=0.0):
+                 sfc_inner_k=1.7, sfc_full_inner_prob=0.0, point_reduce_prob=0.7):
         super().__init__()
         self.max_num_points = max_num_points
         self.expand_ratio = expand_ratio
@@ -60,6 +60,7 @@ class MultiPointSampler(BasePointSampler):
         self.only_one_first_click = only_one_first_click
         self.sfc_inner_k = sfc_inner_k
         self.sfc_full_inner_prob = sfc_full_inner_prob
+        self.point_reduce_prob = point_reduce_prob
 
         if max_num_merged_objects == -1:
             max_num_merged_objects = max_num_points
@@ -219,8 +220,8 @@ class MultiPointSampler(BasePointSampler):
         neg_points = self._multi_mask_sample_points(neg_masks,
                                                     is_negative=[False] * len(self._neg_masks['required']) + [True])
 
-        points = points_reduce(pos_points, remain_one=True, base_prob=.7) + \
-                 points_reduce(neg_points, remain_one=False, base_prob=.7)
+        points = points_reduce(pos_points, remain_one=True, base_prob=self.point_reduce_prob) + \
+                 points_reduce(neg_points, remain_one=False, base_prob=self.point_reduce_prob)
 
         return points
 
