@@ -94,5 +94,16 @@ def search():
             print('--------------------------')
 
 
+def get_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('mode', type=str, default='simple', choices=['simple', 'search'],
+                        help='Mode of the script. (default: simple)')
+    return parser.parse_args()
+
+
 if __name__ == '__main__':
-    search()
+    args = get_args()
+    if args.mode == 'simple':
+        original()
+    else:
+        search()
