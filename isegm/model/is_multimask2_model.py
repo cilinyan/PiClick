@@ -120,7 +120,6 @@ def sort_masks_by_iou_score(masks: torch.Tensor, iou_scores: torch.Tensor, batch
         masks: torch.Tensor = masks[-1]  # -> B, NUM_QUERY, H, W
         iou_scores: torch.Tensor = iou_scores[-1, :, :, 0]  # -> B, NUM_QUERY
     sorted_indices = torch.argsort(iou_scores, dim=1, descending=True)  # -> B, NUM_QUERY
-    pdb.set_trace()
     indices = sorted_indices.unsqueeze(dim=-1).unsqueeze(dim=-1).expand(*masks.shape)  # -> B, NUM_QUERY, H, W
     masks = torch.gather(masks, dim=1, index=indices)  # -> B, NUM_QUERY, H, W
     return masks
@@ -261,7 +260,7 @@ class MultiMask2Model(ISModel):
         self.patch_embed_coords = PatchEmbed(
             img_size=backbone_params['img_size'],
             patch_size=backbone_params['patch_size'],
-            in_chans=(3 + 6) if self.with_prev_mask else (2 + 6),
+            in_chans=(2 + 7) if self.with_prev_mask else 2,
             embed_dim=backbone_params['embed_dim'],
         )
 
@@ -348,7 +347,7 @@ class MultiMask2Model(ISModel):
             pass
 
         if kwargs.get('sort_by_iou', False):
-            outputs['instances'] = sort_masks_by_iou_score(*outputs['instances'][1:3], batch_first=batch_first)
+            outputs['sort_by_iou'] = sort_masks_by_iou_score(*outputs['instances'][1:3], batch_first=batch_first)
             pass
 
         return outputs
@@ -456,12 +455,14 @@ class MultiMask2Model(ISModel):
         return labels, label_weights, mask_targets, mask_weights, pos_inds, neg_inds
 
     def forward_for_iter(self, image, gt_mask, points, batch_data):
-        output = self(image, points, batch_first=False)  # output['instances']: NUM_LATER, BS, NC, H, W
+        output = self(image, points, batch_first=False,
+                      sort_by_iou=True)  # output['instances']: NUM_LATER, BS, NC, H, W
         output['instances'] = output['instances'][:2]
         labels_list, label_weights_list, mask_targets_list, mask_weights_list, num_total_pos, num_total_neg = \
             self.mask_match(batch_data, gt_mask, output)
-        masks_choice = choice_mask(labels_list, output['instances'][1][-1])
-        return masks_choice
+        masks_choice = choice_mask(labels_list, output['instances'][1][-1])  # B, 1, H, W
+        masks_sorted = output['sort_by_iou']
+        return dict(masks_choice=masks_choice, masks_sorted=masks_sorted)
 
     def get_single_click_embedding(self, x_in: torch.Tensor, row: int = 448, col: int = 448):
         # x (Tensor): shape [24, 2]
