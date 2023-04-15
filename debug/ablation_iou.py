@@ -7,6 +7,7 @@ import json
 import numpy as np
 from collections import defaultdict
 import argparse
+from tqdm import tqdm
 
 import pandas as pd
 
@@ -79,19 +80,18 @@ def original():
 
 
 def search():
-    for i in range(10):
-        for j in range(10):
-            for k in range(10):
-                df_85, ds2info_85 = test(data_root=_DATA_ROOT, thr=0.85, strategy=(i, j, k))
-                df_90, ds2info_90 = test(data_root=_DATA_ROOT, thr=0.90, strategy=(i, j, k))
+    ijk = [(i, j, k) for i in range(10) for j in range(10) for k in range(10)]
+    for i, j, k in tqdm(ijk):
+        df_85, ds2info_85 = test(data_root=_DATA_ROOT, thr=0.85, strategy=(i, j, k))
+        df_90, ds2info_90 = test(data_root=_DATA_ROOT, thr=0.90, strategy=(i, j, k))
 
-                if (ds2info_85['PascalVOC']['strategy'] < 0.32) and \
-                        (ds2info_90['GrabCut']['strategy'] < 0.08) and \
-                        (ds2info_90['Berkeley']['strategy'] < 0.13):
-                    print(f'{i}, {j}, {k}')
-                    print(df_85.to_markdown())
-                    print(df_90.to_markdown())
-                    print('--------------------------')
+        if (ds2info_85['PascalVOC']['strategy'] < 0.32) and \
+                (ds2info_90['GrabCut']['strategy'] < 0.08) and \
+                (ds2info_90['Berkeley']['strategy'] < 0.13):
+            print(f'{i}, {j}, {k}')
+            print(df_85.to_markdown())
+            print(df_90.to_markdown())
+            print('--------------------------')
 
 
 if __name__ == '__main__':
