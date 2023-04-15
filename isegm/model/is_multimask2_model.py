@@ -120,6 +120,7 @@ def sort_masks_by_iou_score(masks: torch.Tensor, iou_scores: torch.Tensor, batch
         masks: torch.Tensor = masks[-1]  # -> B, NUM_QUERY, H, W
         iou_scores: torch.Tensor = iou_scores[-1, :, :, 0]  # -> B, NUM_QUERY
     sorted_indices = torch.argsort(iou_scores, dim=1, descending=True)  # -> B, NUM_QUERY
+    pdb.set_trace()
     indices = sorted_indices.unsqueeze(dim=-1).unsqueeze(dim=-1).expand(*masks.shape)  # -> B, NUM_QUERY, H, W
     masks = torch.gather(masks, dim=1, index=indices)  # -> B, NUM_QUERY, H, W
     return masks
