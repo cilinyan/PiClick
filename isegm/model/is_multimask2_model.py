@@ -119,8 +119,9 @@ def sort_masks_by_iou_score(masks: torch.Tensor, iou_scores: torch.Tensor, batch
     else:
         masks: torch.Tensor = masks[-1]  # -> B, NUM_QUERY, H, W
         iou_scores: torch.Tensor = iou_scores[-1, :, :, 0]  # -> B, NUM_QUERY
+    b, num_query, h, w = masks.shape
     sorted_indices = torch.argsort(iou_scores, dim=1, descending=True)  # -> B, NUM_QUERY
-    indices = sorted_indices.expand(*masks.shape)  # -> B, NUM_QUERY, H, W
+    indices = sorted_indices.unsqueeze(dim=-1).unsqueeze(dim=-1).expand(b, num_query, h, w)  # -> B, NUM_QUERY, H, W
     masks = torch.gather(masks, dim=1, index=indices)  # -> B, NUM_QUERY, H, W
     return masks
 
