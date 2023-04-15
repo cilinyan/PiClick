@@ -10,8 +10,8 @@ from .base import BaseTransform
 class AddHorizontalFlip(BaseTransform):
     def transform(self, image_nd, clicks_lists: List[List[Click]]):
         assert len(image_nd.shape) == 4
-        import pdb; pdb.set_trace()
-        image_nd = torch.cat([image_nd, torch.flip(image_nd, dims=[3])], dim=0)  # 1x3x224x224
+        # import pdb; pdb.set_trace()
+        image_nd = torch.cat([image_nd, torch.flip(image_nd, dims=[3])], dim=0)  # 1x3/4x224x224
 
         image_width = image_nd.shape[3]
         clicks_lists_flipped = []
