@@ -11,7 +11,7 @@ from multiprocessing import Pool
 from loguru import logger
 from tqdm import tqdm
 
-_CPT_TEMPLATE = './weights/models/iter_mask/multimask_despair_base448_cocolvis_itermask/003/checkpoints/0{}.pth'
+_CPT_TEMPLATE = './weights/models/iter_mask/multimask_despair_large448_cocolvis_itermask/001/checkpoints/0{}.pth'
 
 
 def _eval_cpt(cpt_path, gpu_idx):
@@ -28,7 +28,7 @@ def error_callback(e):
 
 
 def main():
-    cpt_list = [54, 56] + list(range(60, 80, 1))
+    cpt_list = list(range(50, 80, 1))
     p = Pool(len(cpt_list))
     pbar = tqdm(total=len(cpt_list))
     for i, cpt_idx in enumerate(cpt_list):

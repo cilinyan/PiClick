@@ -9,6 +9,10 @@ python -m torch.distributed.launch --nproc_per_node=8 --master_port=59566 --use_
   models/iter_mask/multimask_despair_large448_cocolvis_itermask.py \
   --batch-size=72 \
   --ngpus=8
+python -m torch.distributed.launch --nproc_per_node=8 --master_port=59566 --use_env train.py \
+  models/iter_mask/multimask_2_base448_cocolvis_itermask.py \
+  --batch-size=136 \
+  --ngpus=8
 ```
 
 # VAL
