@@ -112,6 +112,19 @@ def select_last_layer(cls_scores_list, mask_preds_list, rank_scores_list, onehot
     return scores, mask_preds_list, rank_scores_list  # 1, NUM_SELECT, H, W
 
 
+def sort_masks_by_iou_score(masks: torch.Tensor, iou_scores: torch.Tensor, batch_first: bool = False):
+    if batch_first:
+        masks: torch.Tensor = masks[:, -1, ...]  # -> B, NUM_QUERY, H, W
+        iou_scores: torch.Tensor = iou_scores[:, -1, :, 0]  # -> B, NUM_QUERY
+    else:
+        masks: torch.Tensor = masks[-1]  # -> B, NUM_QUERY, H, W
+        iou_scores: torch.Tensor = iou_scores[-1, :, :, 0]  # -> B, NUM_QUERY
+    sorted_indices = torch.argsort(iou_scores, dim=1, descending=True)  # -> B, NUM_QUERY
+    indices = sorted_indices.expand(*masks.shape)  # -> B, NUM_QUERY, H, W
+    masks = torch.gather(masks, dim=1, index=indices)  # -> B, NUM_QUERY, H, W
+    return masks
+
+
 def select_max_score_mask(cls_scores_list,
                           mask_preds_list,
                           rank_scores_list,
@@ -331,6 +344,10 @@ class MultiMask2Model(ISModel):
 
         if kwargs.get('last_layer', False):
             outputs['instances'] = select_last_layer(*outputs['instances'], alpha=0.0, batch_first=batch_first)
+            pass
+
+        if kwargs.get('sort_by_iou', False):
+            outputs['instances'] = sort_masks_by_iou_score(*outputs['instances'][1:3], batch_first=batch_first)
             pass
 
         return outputs

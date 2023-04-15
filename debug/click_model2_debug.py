@@ -68,7 +68,8 @@ def main():
         [[1, 1, 0], [-1, -1, -1], ] * 6 + [[-1, -1, -1], [100, 454, 1], ] * 6,
         [[1, 1, 0], [2, 20, 100], ] * 6 + [[-1, -1, -1], [100, 222, 1], ] * 6,
     ], dtype=torch.long, device=_DEVICE)
-    out = model(image, points)
+    out_1 = model(image, points)
+    out_2 = model(image, points, sort_by_iou=True)
     pdb.set_trace()
     pass
 
