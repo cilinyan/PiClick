@@ -126,8 +126,8 @@ def draw_5x2(file_path, prob_thresh=0.49):
     for i in [0, 1, 2, 3]:
         image = cv2.cvtColor(data[i]['image'], cv2.COLOR_RGB2BGR)
         gt_mask = data[i]['gt_mask']
-        clicks_list = data[i]['clicks_list']
         click_indx = data[i]['click_indx'] + 1
+        clicks_list = data[i]['clicks_list'][:click_indx]
         iou, _, _, pred_prob = select_max_iou_mask(gt_mask, data[i]['pred_probs_all'])
         prob_map = draw_probmap(pred_prob)
         image_with_mask = draw_with_blend_and_clicks(image, pred_prob > prob_thresh, clicks_list=clicks_list)
