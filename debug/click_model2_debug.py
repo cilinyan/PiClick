@@ -1,4 +1,4 @@
-# PYTHONPATH=".":$PYTHONPATH python debug/click_model_debug.py
+# PYTHONPATH=".":$PYTHONPATH python debug/click_model2_debug.py
 import pdb
 import torch
 from isegm.model.is_multimask2_model import MultiMask2Model

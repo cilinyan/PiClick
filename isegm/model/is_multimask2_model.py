@@ -294,7 +294,7 @@ class MultiMask2Model(ISModel):
 
         image, prev_mask = self.prepare_input(image)
         coord_features = self.get_coord_features(image, prev_mask, points)
-        pdb.set_trace()
+
         coord_features = self.maps_transform(coord_features)
         outputs = self.backbone_forward(image, query_points, points_attn_mask, coord_features)
 
