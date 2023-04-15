@@ -96,7 +96,7 @@ def search():
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('mode', type=str, default='simple', choices=['simple', 'search'],
+    parser.add_argument('--mode', type=str, default='simple', choices=['simple', 'search'],
                         help='Mode of the script. (default: simple)')
     return parser.parse_args()
 
