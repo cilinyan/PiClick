@@ -96,7 +96,7 @@ def search():
             logger.error('\n' + df_90.to_markdown())
             logger.error('--------------------------')
 
-        select_mean = sum(ds2info_90[dataset]['strategt'] for dataset in _DATASETS_ALL) / len(_DATASETS_ALL)
+        select_mean = sum(ds2info_90[dataset]['strategy'] for dataset in _DATASETS_ALL) / len(_DATASETS_ALL)
         if select_mean < select_min:
             select_min = select_mean
             logger.info(f'{i}, {j}, {k}')
