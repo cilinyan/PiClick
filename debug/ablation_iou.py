@@ -36,11 +36,11 @@ def test(data_root='_DATA_ROOT', thr=0.85):
                 iou_idx = np.argmax(iou_score)
                 onehot_idx = np.argmax(onehot_score)
 
-                if (iou_list[cls_idx] < thr) and (iou_list[cls_idx] - 0.05 < max_iou):
+                if (iou_list[cls_idx] < thr) and (iou_list[cls_idx] + 0.05 < max_iou):
                     st['cls'] += 1
-                if (iou_list[iou_idx] < thr) and (iou_list[iou_idx] - 0.05 < max_iou):
+                if (iou_list[iou_idx] < thr) and (iou_list[iou_idx] + 0.05 < max_iou):
                     st['iou'] += 1
-                if (iou_list[onehot_idx] < thr) and (iou_list[onehot_idx] - 0.05 < max_iou):
+                if (iou_list[onehot_idx] < thr) and (iou_list[onehot_idx] + 0.05 < max_iou):
                     st['onehot'] += 1
 
                 if max_iou >= thr:
