@@ -24,23 +24,27 @@ def test(data_root='_DATA_ROOT', thr=0.85):
     data_static = defaultdict(list)
     for dataset, info in data_info.items():
         st = defaultdict(int)
-        for inst in info:
-            max_iou = inst['max_iou']
-            iou_list = np.array(inst['iou_list'])
-            cls_score = np.array(inst['cls_score'])
-            iou_score = np.array(inst['iou_score'])
-            onehot_score = np.array(inst['onehot_score'])
+        for inst_list in info:
+            for inst in inst_list:
+                max_iou = inst['max_iou']
+                iou_list = np.array(inst['iou_list'])
+                cls_score = np.array(inst['cls_score'])
+                iou_score = np.array(inst['iou_score'])
+                onehot_score = np.array(inst['onehot_score'])
 
-            cls_idx = np.argmax(cls_score)
-            iou_idx = np.argmax(iou_score)
-            onehot_idx = np.argmax(onehot_score)
+                cls_idx = np.argmax(cls_score)
+                iou_idx = np.argmax(iou_score)
+                onehot_idx = np.argmax(onehot_score)
 
-            if (iou_list[cls_idx] < thr) and (iou_list[cls_idx] - 0.05 < max_iou):
-                st['cls'] += 1
-            if (iou_list[iou_idx] < thr) and (iou_list[iou_idx] - 0.05 < max_iou):
-                st['iou'] += 1
-            if (iou_list[onehot_idx] < thr) and (iou_list[onehot_idx] - 0.05 < max_iou):
-                st['onehot'] += 1
+                if (iou_list[cls_idx] < thr) and (iou_list[cls_idx] - 0.05 < max_iou):
+                    st['cls'] += 1
+                if (iou_list[iou_idx] < thr) and (iou_list[iou_idx] - 0.05 < max_iou):
+                    st['iou'] += 1
+                if (iou_list[onehot_idx] < thr) and (iou_list[onehot_idx] - 0.05 < max_iou):
+                    st['onehot'] += 1
+
+                if max_iou >= thr:
+                    break
 
         data_static['dataset'].append(dataset)
         data_static['cls'].append(st['cls'] / len(info))
