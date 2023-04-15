@@ -13,7 +13,7 @@ from loguru import logger
 import pandas as pd
 
 # _DATASETS_ALL = ['GrabCut', 'Berkeley', 'DAVIS', 'PascalVOC', 'SBD', 'COCO_MVal', 'ssTEM', 'BraTS', 'OAIZIB', ]
-_DATASETS_ALL = ['GrabCut', 'Berkeley', 'DAVIS', 'PascalVOC', ]
+_DATASETS_ALL = ['GrabCut', 'Berkeley', 'DAVIS', 'PascalVOC', 'SBD', 'COCO_MVal' ]
 _DATA_ROOT = '/data/clyan/quicksilver/click/ablations'
 
 
