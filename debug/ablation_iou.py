@@ -8,6 +8,7 @@ import numpy as np
 from collections import defaultdict
 import argparse
 from tqdm import tqdm
+from loguru import logger
 
 import pandas as pd
 
@@ -81,17 +82,27 @@ def original():
 
 def search():
     ijk = [(i, j, k) for i in range(10) for j in range(10) for k in range(10)]
+    select_min = math.inf
     for i, j, k in tqdm(ijk):
         df_85, ds2info_85 = test(data_root=_DATA_ROOT, thr=0.85, strategy=(i, j, k))
         df_90, ds2info_90 = test(data_root=_DATA_ROOT, thr=0.90, strategy=(i, j, k))
 
-        if (ds2info_85['PascalVOC']['strategy'] < 0.32) and \
-                (ds2info_90['GrabCut']['strategy'] < 0.08) and \
-                (ds2info_90['Berkeley']['strategy'] < 0.13):
-            print(f'{i}, {j}, {k}')
-            print(df_85.to_markdown())
-            print(df_90.to_markdown())
-            print('--------------------------')
+        pf = ds2info_85['PascalVOC']['strategy'] < 0.32
+        gf = ds2info_90['GrabCut']['strategy'] < 0.08
+        bf = ds2info_90['Berkeley']['strategy'] < 0.13
+        if pf and gf and bf:
+            logger.error(f'{i}, {j}, {k}')
+            logger.error('\n' + df_85.to_markdown())
+            logger.error('\n' + df_90.to_markdown())
+            logger.error('--------------------------')
+
+        select_mean = sum(ds2info_90[dataset]['strategt'] for dataset in _DATASETS_ALL) / len(_DATASETS_ALL)
+        if select_mean < select_min:
+            select_min = select_mean
+            logger.info(f'{i}, {j}, {k}')
+            logger.info('\n' + df_85.to_markdown())
+            logger.info('\n' + df_90.to_markdown())
+            logger.info('--------------------------')
 
 
 def get_args():
