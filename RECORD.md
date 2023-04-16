@@ -49,7 +49,7 @@ conda activate click && python scripts/evaluate_model_max_iou.py NoBRS --gpu=0 \
 conda activate click && python scripts/evaluate_model_max_iou.py NoBRS --gpu=7 \
   --checkpoint=./weights/models/iter_mask/multimask_despair_base448_cocolvis_itermask/003/checkpoints/061.pth \
   --eval-mode=cvpr \
-  --datasets=ssTEM,BraTS,OAIZIB \
+  --datasets=GrabCut,Berkeley,DAVIS,PascalVOC,SBD,COCO_MVal \
   --output-tuple --print-ious --save-ious --n-clicks 20
 ```
 
