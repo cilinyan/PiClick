@@ -42,6 +42,7 @@ def serialize(init):
 
 
 def load_model(config, eval_ritm, **kwargs):
+    # import pdb; pdb.set_trace()
     model_class = get_class_from_str(config['class'])
     model_default_params = get_default_params(model_class)
 

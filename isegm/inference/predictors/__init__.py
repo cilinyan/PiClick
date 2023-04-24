@@ -11,7 +11,8 @@ def get_predictor(net, brs_mode, device,
                   zoom_in_params=dict(),
                   predictor_params=None,
                   brs_opt_func_params=None,
-                  lbfgs_params=None):
+                  lbfgs_params=None,
+                  max_iou=False):
     lbfgs_params_ = {
         'm': 20,
         'factr': 0,
@@ -41,7 +42,8 @@ def get_predictor(net, brs_mode, device,
     if brs_mode == 'NoBRS':
         if predictor_params is not None:
             predictor_params_.update(predictor_params)
-        predictor = BasePredictor(net, device, zoom_in=zoom_in, with_flip=with_flip, **predictor_params_)
+        predictor = BasePredictor(net, device, zoom_in=zoom_in, with_flip=with_flip, max_iou=max_iou,
+                                  **predictor_params_)
     elif brs_mode.startswith('f-BRS'):
         predictor_params_.update({
             'net_clicks_limit': 8,

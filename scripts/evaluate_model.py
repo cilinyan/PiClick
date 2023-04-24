@@ -1,17 +1,19 @@
 import sys
 import pickle
 import argparse
+import math
 from pathlib import Path
 
 import cv2
 import torch
 import numpy as np
-
+from copy import deepcopy
+import pickle
 
 sys.path.insert(0, '.')
 from isegm.inference import utils
 from isegm.utils.exp import load_config_file
-from isegm.utils.vis import draw_probmap, draw_with_blend_and_clicks
+from isegm.utils.vis import draw_with_blend_and_clicks
 from isegm.inference.predictors import get_predictor
 from isegm.inference.evaluation import evaluate_dataset
 from isegm.model.modeling.pos_embed import interpolate_pos_embed_inference
@@ -20,9 +22,7 @@ from isegm.model.modeling.pos_embed import interpolate_pos_embed_inference
 def parse_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('mode', choices=['NoBRS', 'RGB-BRS', 'DistMap-BRS',
-                                         'f-BRS-A', 'f-BRS-B', 'f-BRS-C'],
-                        help='')
+    parser.add_argument('mode', choices=['NoBRS', 'RGB-BRS', 'DistMap-BRS', 'f-BRS-A', 'f-BRS-B', 'f-BRS-C'], help='')
 
     group_checkpoints = parser.add_mutually_exclusive_group(required=True)
     group_checkpoints.add_argument('--checkpoint', type=str, default='',
@@ -33,14 +33,14 @@ def parse_args():
                                    help='The relative path to the experiment with checkpoints.'
                                         '(relative to cfg.EXPS_PATH)')
 
-    parser.add_argument('--datasets', type=str, default='GrabCut,Berkeley,DAVIS,PascalVOC,SBD,BraTS,ssTEM,OAIZIB,COCO_MVal',
+    parser.add_argument('--datasets', type=str,
+                        default='GrabCut,Berkeley,DAVIS,PascalVOC,SBD,BraTS,ssTEM,OAIZIB,COCO_MVal',
                         help='List of datasets on which the model should be tested. '
                              'Datasets are separated by a comma. Possible choices: '
                              'GrabCut, Berkeley, DAVIS, SBD, PascalVOC')
 
     group_device = parser.add_mutually_exclusive_group()
-    group_device.add_argument('--gpus', type=str, default='0',
-                              help='ID of used GPU.')
+    group_device.add_argument('--gpus', type=str, default='0', help='ID of used GPU.')
     group_device.add_argument('--cpu', action='store_true', default=False,
                               help='Use only CPU for inference.')
 
@@ -64,6 +64,7 @@ def parse_args():
     parser.add_argument('--save-ious', action='store_true', default=False)
     parser.add_argument('--print-ious', action='store_true', default=False)
     parser.add_argument('--vis-preds', action='store_true', default=False)
+    parser.add_argument('--no_flip', action='store_true', default=False)
     parser.add_argument('--model-name', type=str, default=None,
                         help='The model name that is used for making plots.')
     parser.add_argument('--config-path', type=str, default='./config.yml',
@@ -109,23 +110,28 @@ def main():
         for checkpoint_path in checkpoints_list:
             model = utils.load_is_model(checkpoint_path, args.device, args.eval_ritm)
 
-            predictor_params, zoomin_params = get_predictor_and_zoomin_params(args, dataset_name, eval_ritm=args.eval_ritm)
+            predictor_params, zoomin_params = get_predictor_and_zoomin_params(args, dataset_name,
+                                                                              eval_ritm=args.eval_ritm)
 
             # For SimpleClick models, we usually need to interpolate the positional embedding
             if not args.eval_ritm:
                 interpolate_pos_embed_inference(model.backbone, zoomin_params['target_size'], args.device)
 
+            if args.mode != 'NoBRS':
+                raise NotImplementedError
             predictor = get_predictor(model, args.mode, args.device,
                                       prob_thresh=args.thresh,
                                       predictor_params=predictor_params,
-                                      zoom_in_params=zoomin_params)
+                                      zoom_in_params=zoomin_params,
+                                      with_flip=not args.no_flip,
+                                      )
 
             vis_callback = get_prediction_vis_callback(logs_path, dataset_name, args.thresh) if args.vis_preds else None
             dataset_results = evaluate_dataset(dataset, predictor, pred_thr=args.thresh,
                                                max_iou_thr=args.target_iou,
                                                min_clicks=args.min_n_clicks,
                                                max_clicks=args.n_clicks,
-                                               callback=vis_callback)
+                                               callback=vis_callback, )
 
             row_name = args.mode if single_model_eval else checkpoint_path.stem
             if args.iou_analysis:
@@ -143,6 +149,7 @@ def main():
     # print("torch.cuda.memory_allocated: %fGB"%(torch.cuda.memory_allocated(0)/1024/1024/1024))
     # print("torch.cuda.memory_reserved: %fGB"%(torch.cuda.memory_reserved(0)/1024/1024/1024))
     # print("torch.cuda.max_memory_reserved: %fGB"%(torch.cuda.max_memory_reserved(0)/1024/1024/1024))
+
 
 def get_predictor_and_zoomin_params(args, dataset_name, apply_zoom_in=True, eval_ritm=False):
     predictor_params = {}
@@ -215,7 +222,7 @@ def get_checkpoints_list_and_logs_path(args, cfg):
         logs_path = args.logs_path / exp_path.relative_to(cfg.EXPS_PATH)
     else:
         checkpoints_list = [Path(utils.find_checkpoint(cfg.INTERACTIVE_MODELS_PATH, args.checkpoint))]
-        logs_path = args.logs_path / 'others' / checkpoints_list[0].stem
+        logs_path = args.logs_path / 'piclick' / checkpoints_list[0].stem
 
     return checkpoints_list, logs_path, logs_prefix
 
@@ -226,7 +233,8 @@ def save_results(args, row_name, dataset_name, logs_path, logs_prefix, dataset_r
     mean_spc, mean_spi = utils.get_time_metrics(all_ious, elapsed_time)
 
     iou_thrs = np.arange(0.8, min(0.95, args.target_iou) + 0.001, 0.05).tolist()
-    noc_list, noc_list_std, over_max_list = utils.compute_noc_metric(all_ious, iou_thrs=iou_thrs, max_clicks=args.n_clicks)
+    noc_list, noc_list_std, over_max_list = utils.compute_noc_metric(all_ious, iou_thrs=iou_thrs,
+                                                                     max_clicks=args.n_clicks)
 
     # print(noc_list, noc_list_std)
 
@@ -246,7 +254,7 @@ def save_results(args, row_name, dataset_name, logs_path, logs_prefix, dataset_r
         target_iou_int = int(args.target_iou * 100)
         if target_iou_int not in [80, 85, 90]:
             noc_list, _, over_max_list = utils.compute_noc_metric(all_ious, iou_thrs=[args.target_iou],
-                                                               max_clicks=args.n_clicks)
+                                                                  max_clicks=args.n_clicks)
             table_row += f' NoC@{args.target_iou:.1%} = {noc_list[0]:.2f};'
             table_row += f' >={args.n_clicks}@{args.target_iou:.1%} = {over_max_list[0]}'
 
@@ -298,16 +306,51 @@ def save_iou_analysis_data(args, dataset_name, logs_path, logs_prefix, dataset_r
 
 
 def get_prediction_vis_callback(logs_path, dataset_name, prob_thresh):
-    save_path = logs_path / 'predictions_vis' / dataset_name
+    save_path = logs_path / 'predictions_vis' / 'piclick' / dataset_name
     save_path.mkdir(parents=True, exist_ok=True)
 
-    def callback(image, gt_mask, pred_probs, sample_id, click_indx, clicks_list):
-        sample_path = save_path / f'{sample_id}_{click_indx}.jpg'
-        prob_map = draw_probmap(pred_probs)
-        image_with_mask = draw_with_blend_and_clicks(image, pred_probs > prob_thresh, clicks_list=clicks_list)
-        cv2.imwrite(str(sample_path), np.concatenate((image_with_mask, prob_map), axis=1)[:, :, ::-1])
+    def callback(image, gt_mask, pred_probs, sample_id, click_indx, clicks_list, **kwargs):
+        n = pred_probs.shape[0]
+        sample_path = save_path / f'{sample_id}_{click_indx}_n{n}.jpg'
+        pkl_path = save_path / f'{sample_id}_{click_indx}_n{n}.pkl'
+        data = dict(
+            image=image,
+            image_with_click=draw_with_blend_and_clicks(image, None, clicks_list=clicks_list),
+            gt_mask=gt_mask,
+            pred_probs=pred_probs,
+            sample_id=sample_id,
+            click_indx=click_indx,
+            clicks_list=clicks_list,
+        )
+
+        with open(pkl_path, 'wb') as file:
+            pickle.dump(data, file)
+
+        img_list = []
+        for pred_prob in pred_probs:
+            prob_map = draw_probmap(pred_prob)
+            image_with_mask = draw_with_blend_and_clicks(image, pred_prob > prob_thresh, clicks_list=clicks_list)
+            img_list.append(np.concatenate((image_with_mask, prob_map), axis=1)[:, :, ::-1])
+        cv2.imwrite(str(sample_path), image_concat(img_list))
 
     return callback
+
+
+def draw_probmap(x):
+    # import pdb; pdb.set_trace()
+    return cv2.applyColorMap(np.array(x * 255, dtype=np.uint8), cv2.COLORMAP_HOT)
+
+
+def image_concat(imgs: list, img_per_row: int = 3):
+    r = math.ceil(len(imgs) / img_per_row)
+    img_ones = np.ones_like(imgs[0]) * 255
+
+    img_res = cv2.vconcat([
+        cv2.hconcat([imgs[i * img_per_row + j] if i * img_per_row + j < len(imgs) else img_ones
+                     for j in range(img_per_row)]) for i in range(r)
+    ])
+
+    return img_res
 
 
 if __name__ == '__main__':

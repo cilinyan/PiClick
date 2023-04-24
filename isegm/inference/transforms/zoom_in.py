@@ -1,5 +1,5 @@
 import torch
-
+import pdb
 from typing import List
 from isegm.inference.clicker import Click
 from isegm.utils.misc import get_bbox_iou, get_bbox_from_mask, expand_bbox, clamp_bbox
@@ -38,7 +38,7 @@ class ZoomIn(BaseTransform):
         self._input_image_shape = image_nd.shape
 
         current_object_roi = None
-        if self._prev_probs is not None:
+        if self._prev_probs is not None:  # 如果之前有预测结果，则在上次预测结果周围选择 ROI
             current_pred_mask = (self._prev_probs > self.prob_thresh)[0, 0]
             if current_pred_mask.sum() > 0:
                 current_object_roi = get_object_roi(current_pred_mask, clicks_list,
@@ -62,29 +62,55 @@ class ZoomIn(BaseTransform):
             self._object_roi = current_object_roi
             self.image_changed = True
         self._roi_image = get_roi_image_nd(image_nd, self._object_roi, self.target_size)
+        new_height, new_width = self._roi_image.shape[-2:]
 
         tclicks_lists = [self._transform_clicks(clicks_list)]
         return self._roi_image.to(image_nd.device), tclicks_lists
 
-    def inv_transform(self, prob_map):
+    def inv_transform(self, prob_map, save_delay=False):
         if self._object_roi is None:
             self._prev_probs = prob_map.cpu().numpy()
             return prob_map
 
         assert prob_map.shape[0] == 1
         rmin, rmax, cmin, cmax = self._object_roi
-        prob_map = torch.nn.functional.interpolate(prob_map, size=(rmax - rmin + 1, cmax - cmin + 1),
-                                                   mode='bilinear', align_corners=True)
+        prob_map = torch.nn.functional.interpolate(prob_map, size=(rmax - rmin + 1, cmax - cmin + 1), mode='bilinear',
+                                                   align_corners=True)
 
         if self._prev_probs is not None:
-            new_prob_map = torch.zeros(*self._prev_probs.shape, device=prob_map.device, dtype=prob_map.dtype)
-            new_prob_map[:, :, rmin:rmax + 1, cmin:cmax + 1] = prob_map
+            try:
+                new_prob_map = torch.zeros(*self._prev_probs.shape, device=prob_map.device, dtype=prob_map.dtype)
+                new_prob_map[:, :, rmin:rmax + 1, cmin:cmax + 1] = prob_map
+            except:
+                b, _, h, w = self._prev_probs.shape
+                num_now = prob_map.shape[1]
+                new_prob_map = torch.zeros(*(b, num_now, h, w), device=prob_map.device, dtype=prob_map.dtype)
+                new_prob_map[:, :, rmin:rmax + 1, cmin:cmax + 1] = prob_map
         else:
             new_prob_map = prob_map
 
-        self._prev_probs = new_prob_map.cpu().numpy()
+        if not save_delay:
+            self._prev_probs = new_prob_map.cpu().numpy()
 
         return new_prob_map
+
+    def set_prev_probs(self, prob_map):
+        if self._object_roi is None:
+            self._prev_probs = prob_map.cpu().numpy()
+        else:
+            assert prob_map.shape[0] == 1
+            rmin, rmax, cmin, cmax = self._object_roi
+            prob_map = torch.nn.functional.interpolate(prob_map,
+                                                       size=(rmax - rmin + 1, cmax - cmin + 1),
+                                                       mode='bilinear',
+                                                       align_corners=True)
+            if self._prev_probs is not None:
+                new_prob_map = torch.zeros(*self._prev_probs.shape, device=prob_map.device, dtype=prob_map.dtype)
+                new_prob_map[:, :, rmin:rmax + 1, cmin:cmax + 1] = prob_map
+            else:
+                new_prob_map = prob_map
+
+            self._prev_probs = new_prob_map.cpu().numpy()
 
     def check_possible_recalculation(self):
         if self._prev_probs is None or self._object_roi is not None or self.skip_clicks > 0:
@@ -124,18 +150,23 @@ class ZoomIn(BaseTransform):
         for click in clicks_list:
             new_r = crop_height * (click.coords[0] - rmin) / (rmax - rmin + 1)
             new_c = crop_width * (click.coords[1] - cmin) / (cmax - cmin + 1)
+            # if (0 <= new_r < crop_height) and (0 <= new_c < crop_width):
+            #     transformed_clicks.append(click.copy(coords=(new_r, new_c)))
             transformed_clicks.append(click.copy(coords=(new_r, new_c)))
         return transformed_clicks
 
 
 def get_object_roi(pred_mask, clicks_list, expansion_ratio, min_crop_size):
+    # 以当前 predict mask, 适当扩展 region of interest
     pred_mask = pred_mask.copy()
 
     for click in clicks_list:
         if click.is_positive:
             pred_mask[int(click.coords[0]), int(click.coords[1])] = 1
 
+    # extracts the bounding box of an object from a binary predict mask
     bbox = get_bbox_from_mask(pred_mask)
+    # 扩展边界框（bbox）
     bbox = expand_bbox(bbox, expansion_ratio, min_crop_size)
     h, w = pred_mask.shape[0], pred_mask.shape[1]
     bbox = clamp_bbox(bbox, 0, h - 1, 0, w - 1)
@@ -148,7 +179,7 @@ def get_roi_image_nd(image_nd, object_roi, target_size):
 
     height = rmax - rmin + 1
     width = cmax - cmin + 1
-
+    # import pdb; pdb.set_trace()
     if isinstance(target_size, tuple):
         new_height, new_width = target_size
     else:

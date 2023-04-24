@@ -34,6 +34,21 @@ def save_checkpoint(net, checkpoints_path, epoch=None, prefix='', verbose=True, 
 
 
 def get_bbox_from_mask(mask):
+    """
+    This function extracts the bounding box of an object from a binary mask,
+    which is a 2D boolean array that represents the object in an image where True pixels indicate the object's presence.
+    The function first projects the mask onto rows and columns to
+    find the minimum and maximum positions of the object along both dimensions,
+    i.e., the top-left and bottom-right corners.
+    It then calculates the coordinates of the object's bounding box,
+    including the top row (rmin), bottom row (rmax), left column (cmin), and right column (cmax),
+    and returns them as a tuple.
+    Args:
+        mask:
+
+    Returns:
+
+    """
     rows = np.any(mask, axis=1)
     cols = np.any(mask, axis=0)
     rmin, rmax = np.where(rows)[0][[0, -1]]
@@ -43,21 +58,22 @@ def get_bbox_from_mask(mask):
 
 
 def expand_bbox(bbox, expand_ratio, min_crop_size=None):
-    rmin, rmax, cmin, cmax = bbox
+    rmin, rmax, cmin, cmax = bbox  # 提取边界框的上下左右四个坐标值 rmin, rmax, cmin, cmax
     rcenter = 0.5 * (rmin + rmax)
-    ccenter = 0.5 * (cmin + cmax)
+    ccenter = 0.5 * (cmin + cmax)  # 计算边界框的中心点 rcenter 和 ccenter
     height = expand_ratio * (rmax - rmin + 1)
-    width = expand_ratio * (cmax - cmin + 1)
-    if min_crop_size is not None:
+    width = expand_ratio * (cmax - cmin + 1)  # 根据扩展比例 expand_ratio，计算新的边界框高度 height 和宽度 width
+    if min_crop_size is not None:  # 如果提供了最小裁剪尺寸 min_crop_size，则将 height 和 width 限制为不小于 min_crop_size
         height = max(height, min_crop_size)
         width = max(width, min_crop_size)
 
+    # 基于中心点和新的高度和宽度计算新的上下左右四个坐标值，并将其四舍五入为整数
     rmin = int(round(rcenter - 0.5 * height))
     rmax = int(round(rcenter + 0.5 * height))
     cmin = int(round(ccenter - 0.5 * width))
     cmax = int(round(ccenter + 0.5 * width))
 
-    return rmin, rmax, cmin, cmax
+    return rmin, rmax, cmin, cmax  # 返回新的边界框的上下左右四个坐标值 rmin, rmax, cmin, cmax
 
 
 def clamp_bbox(bbox, rmin, rmax, cmin, cmax):

@@ -42,8 +42,19 @@ class ISModel(nn.Module):
         coord_features = self.maps_transform(coord_features)
         outputs = self.backbone_forward(image, coord_features)
 
-        outputs['instances'] = nn.functional.interpolate(outputs['instances'], size=image.size()[2:],
-                                                         mode='bilinear', align_corners=True)
+        if not isinstance(outputs['instances'], tuple):
+            outputs['instances'] = nn.functional.interpolate(outputs['instances'], size=image.size()[2:],
+                                                             mode='bilinear', align_corners=True)
+        else:
+            all_cls_scores, all_mask_preds = outputs['instances']
+            h_img, w_img = image.shape[-2:]
+            num_layer, batch_size, num_queries, h_feat, w_feat = all_mask_preds.shape
+            all_mask_preds = torch.reshape(all_mask_preds, (num_layer * batch_size, num_queries, h_feat, w_feat))
+            all_mask_preds = nn.functional.interpolate(all_mask_preds, size=image.size()[2:],
+                                                       mode='bilinear', align_corners=True)
+            all_mask_preds = torch.reshape(all_mask_preds, (num_layer, batch_size, num_queries, h_img, w_img))
+            outputs['instances'] = all_cls_scores, all_mask_preds
+
         if self.with_aux_output:
             outputs['instances_aux'] = nn.functional.interpolate(outputs['instances_aux'], size=image.size()[2:],
                                                                  mode='bilinear', align_corners=True)

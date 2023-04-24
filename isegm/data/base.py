@@ -5,6 +5,13 @@ import torch
 from torchvision import transforms
 from .points_sampler import MultiPointSampler
 from .sample import DSample
+from copy import deepcopy
+from loguru import logger
+import math
+import sys
+
+logger.remove()
+logger.add(sys.stderr, level="INFO")
 
 
 class ISDataset(torch.utils.data.dataset.Dataset):
@@ -29,7 +36,7 @@ class ISDataset(torch.utils.data.dataset.Dataset):
 
         self.dataset_samples = None
 
-    def __getitem__(self, index):
+    def _get_item(self, index):
         if self.samples_precomputed_scores is not None:
             index = np.random.choice(self.samples_precomputed_scores['indices'],
                                      p=self.samples_precomputed_scores['probs'])
@@ -39,22 +46,39 @@ class ISDataset(torch.utils.data.dataset.Dataset):
 
         sample = self.get_sample(index)
         sample = self.augment_sample(sample)
+
         sample.remove_small_objects(self.min_object_area)
 
         self.points_sampler.sample_object(sample)
         points = np.array(self.points_sampler.sample_points())
         mask = self.points_sampler.selected_mask
 
+        data_info = deepcopy(sample.data_info)
+        data_info['image_id'] = sample.image_id
+        data_info['select_range'] = sample.select_range
+        data_info['sample_object_ids'] = sample.sample_object_ids
+
         output = {
             'images': self.to_tensor(sample.image),
             'points': points.astype(np.float32),
-            'instances': mask
+            'instances': mask,
+            'data_info': data_info,
         }
 
         if self.with_image_info:
             output['image_info'] = sample.sample_id
 
         return output
+
+    def __getitem__(self, index):
+        logger.debug(f'index:           {index}')
+        logger.debug(f'self.actual_len: {self.actual_len}')
+        index = index if index < self.actual_len else random.randrange(0, self.actual_len)
+        try:
+            return self._get_item(index)
+        except Exception as e:
+            logger.debug(f'fail to read {index}, with error: {e}')
+            return self.__getitem__(random.randrange(0, self.actual_len))
 
     def augment_sample(self, sample) -> DSample:
         if self.augmentator is None:
@@ -72,11 +96,14 @@ class ISDataset(torch.utils.data.dataset.Dataset):
     def get_sample(self, index) -> DSample:
         raise NotImplementedError
 
+    @property
+    def actual_len(self):
+        return self.get_samples_number()
+
     def __len__(self):
         if self.epoch_len > 0:
             return self.epoch_len
-        else:
-            return self.get_samples_number()
+        return self.actual_len
 
     def get_samples_number(self):
         return len(self.dataset_samples)

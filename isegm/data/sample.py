@@ -3,12 +3,18 @@ from copy import deepcopy
 from isegm.utils.misc import get_labels_with_sizes
 from isegm.data.transforms import remove_image_only_transforms
 from albumentations import ReplayCompose
+import math
+from loguru import logger
 
 
 class DSample:
     def __init__(self, image, encoded_masks, objects=None,
-                 objects_ids=None, ignore_ids=None, sample_id=None):
+                 objects_ids=None, ignore_ids=None, sample_id=None,
+                 select_range=math.inf, image_id=None):
+        self.select_range = select_range
+        self.image_id = image_id
         self.image = image
+        self._ori_shape = image.shape[:2]
         self.sample_id = sample_id
 
         if len(encoded_masks.shape) == 2:
@@ -41,6 +47,8 @@ class DSample:
         self._soft_mask_aug = None
         self._original_data = self.image, self._encoded_masks, deepcopy(self._objects)
 
+        self.sample_object_ids = None
+
     def augment(self, augmentator):
         self.reset_augmentation()
         aug_output = augmentator(image=self.image, mask=self._encoded_masks)
@@ -57,6 +65,10 @@ class DSample:
         self.remove_small_objects(min_area=1)
 
         self._augmented = True
+
+    @property
+    def data_info(self) -> dict:
+        return dict(image=self.image, mask=self._encoded_masks, object=self._objects, ori_shape=self._ori_shape)
 
     def reset_augmentation(self):
         if not self._augmented:

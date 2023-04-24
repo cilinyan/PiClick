@@ -4,7 +4,7 @@ import shutil
 import pprint
 from pathlib import Path
 from datetime import datetime
- 
+
 import yaml
 import torch
 from easydict import EasyDict as edict
@@ -25,7 +25,9 @@ def init_experiment(args, model_name):
     update_config(cfg, args)
 
     cfg.distributed = args.distributed
-    cfg.local_rank = args.local_rank
+    cfg.rank = int(os.environ["RANK"])
+    cfg.world_size = int(os.environ['WORLD_SIZE'])
+    cfg.local_rank = cfg.gpu = int(os.environ['LOCAL_RANK'])
     if cfg.distributed:
         torch.distributed.init_process_group(backend='nccl', init_method='env://')
         if args.workers > 0:
@@ -78,14 +80,9 @@ def init_experiment(args, model_name):
 
     if cfg.distributed:
         cfg.device = torch.device('cuda')
-        cfg.gpu_ids = [cfg.gpu_ids[cfg.local_rank]]
-        torch.cuda.set_device(cfg.gpu_ids[0])
+        torch.cuda.set_device(cfg.gpu)
     else:
-        if cfg.multi_gpu:
-            os.environ['CUDA_VISIBLE_DEVICES'] = cfg.gpus
-            ngpus = torch.cuda.device_count()
-            assert ngpus >= cfg.ngpus
-        cfg.device = torch.device(f'cuda:{cfg.gpu_ids[0]}')
+        raise RuntimeError
 
     if cfg.local_rank == 0:
         add_logging(cfg.LOGS_PATH, prefix='train_')
