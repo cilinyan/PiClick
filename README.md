@@ -1,4 +1,4 @@
-## [PiClick: Picking the desired mask in click-based interactive segmentation](https://arxiv.org/abs/xxxx.xxxxx)
+## [PiClick: Picking the desired mask in click-based interactive segmentation](https://arxiv.org/abs/2304.11609)
 
 <p align="center">
   <img src="./assets/piclick_architecture.png" alt="drawing", width="700"/>
@@ -64,6 +64,17 @@ Other datasets: [RITM Github](https://github.com/saic-vul/ritm_interactive_segme
 
 The code is released under the MIT License. It is a short, permissive software license. Basically, you can do whatever
 you want as long as you include the original copyright and license notice in any copy of the software/source.
+
+## Citation
+
+@misc{yan2023piclick,
+      title={PiClick: Picking the desired mask in click-based interactive segmentation}, 
+      author={Cilin Yan and Haochen Wang and Jie Liu and Xiaolong Jiang and Yao Hu and Xu Tang and Guoliang Kang and Efstratios Gavves},
+      year={2023},
+      eprint={2304.11609},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV}
+}
 
 ## Acknowledgement
 
