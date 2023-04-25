@@ -67,6 +67,7 @@ you want as long as you include the original copyright and license notice in any
 
 ## Citation
 
+```
 @misc{yan2023piclick,
       title={PiClick: Picking the desired mask in click-based interactive segmentation}, 
       author={Cilin Yan and Haochen Wang and Jie Liu and Xiaolong Jiang and Yao Hu and Xu Tang and Guoliang Kang and Efstratios Gavves},
@@ -75,6 +76,7 @@ you want as long as you include the original copyright and license notice in any
       archivePrefix={arXiv},
       primaryClass={cs.CV}
 }
+```
 
 ## Acknowledgement
 
