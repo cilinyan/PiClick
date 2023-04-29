@@ -25,7 +25,7 @@ You also need to configue the paths to the datasets in [config.yml](./config.yml
 
 Before evaluation, please download the datasets and models, and then configure the path in [config.yml](./config.yml).
 
-Use the following code to evaluate the huge model.
+Use the following code to evaluate the base model.
 
 ```
 python scripts/evaluate_model.py NoBRS --gpu=0 \
