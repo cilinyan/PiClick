@@ -78,6 +78,8 @@ you want as long as you include the original copyright and license notice in any
 }
 ```
 
+## Note
+The according annotation platform will be released upon publication.
 ## Acknowledgement
 
 Our project is developed based on 
