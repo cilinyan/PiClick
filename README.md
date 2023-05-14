@@ -1,4 +1,4 @@
-## [PiClick: Picking the desired mask in click-based interactive segmentation](https://arxiv.org/abs/2304.11609)
+## [PiClick: Picking the desired mask in click-based interactive segmentation](https://arxiv.org/abs/xxxx.xxxx)
 
 <p align="center">
   <img src="./assets/piclick_architecture.png" alt="drawing", width="700"/>
@@ -50,7 +50,7 @@ python -m torch.distributed.launch --nproc_per_node=8 --master_port=59566 --use_
 
 ## Download
 
-PiClick models: [Google Drive](https://drive.google.com/file/d/1ZMMzhiA7ocU9Wgr0xnB0ruGHhpOLklWG/view?usp=sharing)
+PiClick models: [Google Drive](https://drive.google.com/file/d/1VeYeqqUWLebL8yg0so8ywZowOMImv_mI/view?usp=sharing)
 
 BraTS dataset (369
 cases): [Google Drive](https://drive.google.com/drive/folders/1B6y1nNBnWU09EhxvjaTdp1XGjc1T6wUk?usp=sharing)
@@ -64,19 +64,6 @@ Other datasets: [RITM Github](https://github.com/saic-vul/ritm_interactive_segme
 
 The code is released under the MIT License. It is a short, permissive software license. Basically, you can do whatever
 you want as long as you include the original copyright and license notice in any copy of the software/source.
-
-## Citation
-
-```
-@misc{yan2023piclick,
-      title={PiClick: Picking the desired mask in click-based interactive segmentation}, 
-      author={Cilin Yan and Haochen Wang and Jie Liu and Xiaolong Jiang and Yao Hu and Xu Tang and Guoliang Kang and Efstratios Gavves},
-      year={2023},
-      eprint={2304.11609},
-      archivePrefix={arXiv},
-      primaryClass={cs.CV}
-}
-```
 
 ## Note
 The according annotation platform will be released upon publication.
