@@ -58,7 +58,7 @@ cases): [Google Drive](https://drive.google.com/drive/folders/1B6y1nNBnWU09Ehxvj
 OAI-ZIB dataset (150
 cases): [Google Drive](https://drive.google.com/drive/folders/1B6y1nNBnWU09EhxvjaTdp1XGjc1T6wUk?usp=sharing)
 
-SBD dataset: [Baidu Drive (picl)](https://pan.baidu.com/s/1saivOQdB3ZMN_r8oUSsqgQ)
+SBD dataset: [Baidu Drive (passwd: picl)](https://pan.baidu.com/s/1saivOQdB3ZMN_r8oUSsqgQ)
 
 Other datasets: [RITM Github](https://github.com/saic-vul/ritm_interactive_segmentation)
 
