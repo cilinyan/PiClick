@@ -55,7 +55,7 @@ def select_max_iou_mask(gt_mask, pred_probs, pred_thr):
 
 def evaluate_sample(image, gt_mask, predictor, max_iou_thr,
                     pred_thr=0.49, min_clicks=1, max_clicks=20,
-                    sample_id=None, callback=None, ):
+                    sample_id=None, callback=None, **kwargs):
     clicker = Clicker(gt_mask=gt_mask)
     pred_mask = np.zeros_like(gt_mask)
     ious_list = []
@@ -65,7 +65,7 @@ def evaluate_sample(image, gt_mask, predictor, max_iou_thr,
 
         for click_indx in range(max_clicks):
             clicker.make_next_click(pred_mask)
-            pred_probs_all = predictor.get_prediction(clicker, )
+            pred_probs_all = predictor.get_prediction(clicker, max_score=kwargs.get('max_score', False))
             max_iou_val, idx_max_iou, mask_max_iou, prob_max_iou = \
                 select_max_iou_mask(gt_mask, pred_probs_all, pred_thr)
 

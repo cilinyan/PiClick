@@ -148,11 +148,14 @@ class BasePredictor(object):
         cv2.imwrite(output_path, img)
         pass
 
-    def flipped_mask_match(self, cls_scores, masks_pred, seg_thr=.49, vis_flag: bool = False):
+    def flipped_mask_match(self, cls_scores, masks_pred, rank_scores, onehot_scores,
+                           seg_thr=.49, vis_flag: bool = False, max_score: bool = False):
         """
         Args:
-            cls_scores: shape 2x7x2 or 2x7
-            masks_pred: shape 2x7x224x224
+            cls_scores:    shape 2x7x2 or 2x7
+            masks_pred:    shape 2x7x224x224
+            rank_scores:   shape 2x7
+            onehot_scores: shape 2x7
         """
         # time
         time_stamp = str(time.time()).replace('.', '_')
@@ -168,6 +171,8 @@ class BasePredictor(object):
                                    output_path=osp.join(self.mask_dir, f'{time_stamp}_ori.jpg'))
         # split
         score_0, score_1 = cls_scores[0], cls_scores[1]
+        rank_score_0, rank_score_1 = rank_scores[0], rank_scores[1]
+        onehot_score_0, onehot_score_1 = onehot_scores[0], onehot_scores[1]
         mask_0, mask_1 = masks[0], masks[1].long()
         # assign and sample: 0 -> 1
         assigned_gt_inds = self.assigner.assign_match(score_0, mask_0, score_1, mask_1)
@@ -176,20 +181,34 @@ class BasePredictor(object):
 
         mask_0_p, mask_1_p = masks_pred[0], masks_pred[1]
         mask_0_p = mask_0_p[assigned_gt_inds, ...]
+        score_0_p, schore_1_p = score_0, score_1
+        score_0_p = score_0_p[assigned_gt_inds, ...]
+        rank_score_0_p, rank_score_1_p = rank_score_0, rank_score_1
+        rank_score_0_p = rank_score_0_p[assigned_gt_inds, ...]
+        onehot_score_0_p, onehot_score_1_p = onehot_score_0, onehot_score_1
+        onehot_score_0_p = onehot_score_0_p[assigned_gt_inds, ...]
 
         if vis_flag:
             self.mask_match_visual(torch.stack([score_0, score_1]), torch.stack([mask_0, mask_1]), prefix='match',
                                    output_path=osp.join(self.mask_dir, f'{time_stamp}_match.jpg'))
 
-        # cls_scores = torch.stack([score_0, score_1])
-        masks_p = torch.stack([mask_0_p, mask_1_p])
-
         masks_p_r = 0.5 * (mask_0_p[None, ...] + mask_1_p[None, ...])
-        # pdb.set_trace()
+        masks_p = torch.stack([mask_0_p, mask_1_p])
         masks_p = self.transforms[-1].inv_transform(masks_p, mode='multi_mask')  # Flip
+
+        if max_score:
+            final_score_0 = 6 * rank_score_0_p + 1 * onehot_score_0_p
+            final_score_1 = 6 * rank_score_1_p + 1 * onehot_score_1_p
+            final_score = final_score_0 + final_score_1
+            idx_max = final_score.argmax()
+            masks_p_r = masks_p_r[idx_max:idx_max + 1]
+            masks_p = torch.stack([mask_0_p[idx_max:idx_max + 1], mask_1_p[idx_max:idx_max + 1]])
+            masks_p = self.transforms[-1].inv_transform(masks_p, mode='multi_mask')  # Flip
+            pass
+
         return masks_p, masks_p_r
 
-    def get_prediction(self, clicker, prev_mask=None, ):
+    def get_prediction(self, clicker, prev_mask=None, max_score=False):
         clicks_list = clicker.get_clicks()
 
         if self.click_models is not None:
@@ -230,7 +249,7 @@ class BasePredictor(object):
     def _get_prediction(self, image_nd, clicks_lists, is_image_changed, **kwargs):
         points_nd = self.get_points_nd(clicks_lists)
         # import pdb; pdb.set_trace()
-        return self.net(image_nd, points_nd, last_layer=True)['instances'][:2]
+        return self.net(image_nd, points_nd, last_layer=True)['instances']
 
     def _get_transform_states(self):
         return [x.get_state() for x in self.transforms]

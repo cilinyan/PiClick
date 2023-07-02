@@ -65,6 +65,7 @@ def parse_args():
     parser.add_argument('--print-ious', action='store_true', default=False)
     parser.add_argument('--vis-preds', action='store_true', default=False)
     parser.add_argument('--no_flip', action='store_true', default=False)
+    parser.add_argument('--max_score', action='store_true', default=False)
     parser.add_argument('--model-name', type=str, default=None,
                         help='The model name that is used for making plots.')
     parser.add_argument('--config-path', type=str, default='./config.yml',
@@ -131,7 +132,8 @@ def main():
                                                max_iou_thr=args.target_iou,
                                                min_clicks=args.min_n_clicks,
                                                max_clicks=args.n_clicks,
-                                               callback=vis_callback, )
+                                               callback=vis_callback,
+                                               max_score=args.max_score)
 
             row_name = args.mode if single_model_eval else checkpoint_path.stem
             if args.iou_analysis:
