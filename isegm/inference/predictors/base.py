@@ -192,16 +192,16 @@ class BasePredictor(object):
             self.mask_match_visual(torch.stack([score_0, score_1]), torch.stack([mask_0, mask_1]), prefix='match',
                                    output_path=osp.join(self.mask_dir, f'{time_stamp}_match.jpg'))
 
-        masks_p_r = 0.5 * (mask_0_p[None, ...] + mask_1_p[None, ...])
+        masks_p_r = 0.5 * (mask_0_p[None, ...] + mask_1_p[None, ...])  # [1, 7, 448, 448]
         masks_p = torch.stack([mask_0_p, mask_1_p])
-        masks_p = self.transforms[-1].inv_transform(masks_p, mode='multi_mask')  # Flip
+        masks_p = self.transforms[-1].inv_transform(masks_p, mode='multi_mask')  # Flip, [2, 7, 448, 448]
 
         if max_score:
             final_score_0 = 6 * rank_score_0_p + 1 * onehot_score_0_p
             final_score_1 = 6 * rank_score_1_p + 1 * onehot_score_1_p
-            final_score = final_score_0 + final_score_1
+            final_score = final_score_0 + final_score_1  # [7, ]
             idx_max = final_score.argmax()
-            masks_p_r = masks_p_r[idx_max:idx_max + 1]
+            masks_p_r = masks_p_r[:, idx_max:idx_max + 1, ...]
             masks_p = torch.stack([mask_0_p[idx_max:idx_max + 1], mask_1_p[idx_max:idx_max + 1]])
             masks_p = self.transforms[-1].inv_transform(masks_p, mode='multi_mask')  # Flip
             pass
