@@ -226,7 +226,7 @@ class BasePredictor(object):
         image_nd, clicks_lists, is_image_changed = self.apply_transforms(input_image, [clicks_list])
         assert self.with_flip
         instances = self._get_prediction(image_nd, clicks_lists, is_image_changed)
-        pred_logits, pred_rignt_ = self.flipped_mask_match(*instances)
+        pred_logits, pred_rignt_ = self.flipped_mask_match(*instances, max_score=max_score)
 
         prediction = F.interpolate(pred_logits, mode='bilinear', align_corners=True, size=image_nd.size()[2:])
 
