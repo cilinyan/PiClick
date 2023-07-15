@@ -291,9 +291,11 @@ class ISTrainerPiClick(object):
             logger.info(f'Total Epochs: {num_epochs}')
 
         for epoch in range(start_epoch, num_epochs):
-            print(f'Epoch {epoch} start...')
+            if self.is_master:
+                print(f'Epoch {epoch} start...')
             self.training(epoch)
-            print(f'Epoch {epoch} done.')
+            if self.is_master:
+                print(f'Epoch {epoch} done.')
             if validation:
                 self.validation(epoch)
 
