@@ -1,25 +1,27 @@
-INTERACTIVE_MODELS_PATH: "./weights"
-EXPS_PATH: "./weights/models"
+INTERACTIVE_MODELS_PATH: "/intern-share/clyan/weights/is/simpleclick"
+EXPS_PATH: "/intern-share/clyan/weights/is/simpleclick/exps"
+
+# ADE20K  Berkeley  BraTS20  coco17  COCO_MVal  DAVIS  GrabCut  imagenet1k  LVIS  OAI_ZIB  SBD  VOC
 
 # Evaluation datasets
-GRABCUT_PATH: "./datasets/GrabCut"
-BERKELEY_PATH: "./datasets/Berkeley"
-DAVIS_PATH: "./datasets/DAVIS"
-COCO_MVAL_PATH: "./datasets/COCO_MVal"
-BraTS_PATH: "./datasets/BraTS20"
-ssTEM_PATH: "./datasets/ssTEM/groundtruth-drosophila-vnc-master/stack1"
-OAIZIB_PATH: "./datasets/OAI_ZIB"
+GRABCUT_PATH: "/intern-share/clyan/datasets/GrabCut/GrabCut"
+BERKELEY_PATH: "/intern-share/clyan/datasets/Berkeley/Berkeley"
+DAVIS_PATH: "/intern-share/clyan/datasets/DAVIS/DAVIS"
+COCO_MVAL_PATH: "/intern-share/clyan/datasets/COCO_MVal/COCO_MVal"
+BraTS_PATH: "/intern-share/clyan/datasets/BraTS/BraTS20"
+ssTEM_PATH: "/intern-share/clyan/datasets/ssTEM/groundtruth-drosophila-vnc-master/stack1"
+OAIZIB_PATH: "/intern-share/clyan/datasets/OAI-ZIB/OAI-ZIB"
 OAI_PATH: "./datasets/OAI"
 HARD_PATH: "./datasets/HARD"
 
 
 # Train datasets
-SBD_PATH: "./datasets/SBD/benchmark_RELEASE/dataset/"
+SBD_PATH: "/intern-share/clyan/datasets/SBD/benchmark_RELEASE/dataset"
 COCO_PATH: "./datasets/LVIS"
-LVIS_v1_PATH: "./datasets/LVIS"
+LVIS_v1_PATH: "/intern-share/clyan/datasets/LVIS"
 OPENIMAGES_PATH: "./datasets/OpenImages"
-PASCALVOC_PATH: "./datasets/VOC/VOCdevkit/VOC2012"
-ADE20K_PATH: "./datasets/ADE20K"
+PASCALVOC_PATH: "/intern-share/clyan/datasets/VOC/VOCdevkit/VOC2012"
+ADE20K_PATH: "/intern-share/clyan/datasets/ADE20k"
 
 # You can download the weights for HRNet from the repository:
 # https://github.com/HRNet/HRNet-Image-Classification
@@ -38,6 +40,6 @@ IMAGENET_PRETRAINED_MODELS:
   HRF_BASE: "./weights/hrt_base.pth"
   SWIN_BASE: "./weights/swin_base_patch4_window12_384_22k.pth"
   SWIN_LARGE: "./weights/swin_large_patch4_window12_384_22k.pth"
-  MAE_BASE: "./weights/mae_pretrain_vit_base.pth"
-  MAE_LARGE: "./weights/mae_pretrain_vit_large.pth"
-  MAE_HUGE: "./weights/mae_pretrain_vit_huge.pth"
+  MAE_BASE: "/intern-share/clyan/pretrain/mae/mae_pretrain_vit_base.pth"
+  MAE_LARGE: "/intern-share/clyan/pretrain/mae/mae_pretrain_vit_large.pth"
+  MAE_HUGE: "/intern-share/clyan/pretrain/mae/mae_pretrain_vit_huge.pth"
