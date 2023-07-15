@@ -11,3 +11,4 @@ albumentations==0.5.2
 mmcv-full==1.6.2
 timm==0.6.11
 Cython==0.29.32
+loguru
