@@ -23,7 +23,8 @@ def main():
         cmd = f"python -m torch.distributed.launch --nproc_per_node={ngpu} --master_port=59566 --use_env train.py " \
               f"models/iter_mask/piclick_base448_cocolvis_itermask_{i}m.py " \
               f"--batch-size={batch_size} " \
-              f"--ngpus={ngpu} "
+              f"--ngpus={ngpu} " \
+              f" | tee logs/piclick_base448_cocolvis_itermask_{i}m.log"
         os.system(cmd)
 
 
