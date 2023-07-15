@@ -554,6 +554,6 @@ class DETRLikeDespairLoss(nn.Module):
         losses = self.loss(all_cls_scores, all_mask_preds, all_rank_scores, all_onehot_scores,
                            gt_labels, gt_masks, single_gt_masks)
         loss, log_vars = self._parse_losses(losses)
-        if torch.distributed.get_rank() == 0:
-            logger.warning(str(log_vars))
+        # if torch.distributed.get_rank() == 0:
+        #     logger.warning(str(log_vars))
         return loss
