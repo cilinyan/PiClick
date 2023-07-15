@@ -20,7 +20,7 @@ def main():
     ngpu = args.ngpu
     batch_size = 17 * ngpu
     for i in [5, 3, 1, 6, 4, 2, ]:
-        cmd = f"python -m torch.distributed.launch --nproc_per_node={ngpu} --master_port=59566 --use_env train.py " \
+        cmd = f"python -m torch.distributed.launch --nproc_per_node={ngpu} --master_port=5951{i} --use_env train.py " \
               f"models/iter_mask/piclick_base448_cocolvis_itermask_{i}m.py " \
               f"--batch-size={batch_size} " \
               f"--ngpus={ngpu} " \
