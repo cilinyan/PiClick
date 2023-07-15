@@ -291,7 +291,9 @@ class ISTrainerPiClick(object):
             logger.info(f'Total Epochs: {num_epochs}')
 
         for epoch in range(start_epoch, num_epochs):
+            print(f'Epoch {epoch} start...')
             self.training(epoch)
+            print(f'Epoch {epoch} done.')
             if validation:
                 self.validation(epoch)
 
@@ -469,7 +471,6 @@ class ISTrainerPiClick(object):
             net_input = torch.cat((image, prev_output), dim=1) if self.net.module.with_prev_mask else image
             output = self.net(net_input, points, batch_first=True, train_mode=True)
             output = output_batch_no_first(output)
-
 
             loss = 0.0
             loss = self.add_loss('instance_loss', loss, losses_logging, validation,
