@@ -287,14 +287,14 @@ class PiClickMPModel(ISModel):
 
     def forward(self, image, points, batch_first=False, **kwargs):
         row, col = image.shape[-2:]
-        query_points, points_attn_mask = self.get_batch_click_embedding(points, row, col)
-        query_points = query_points.transpose(0, 1).contiguous()  # B, num_points, c -> num_points, B, c
+        # query_points, points_attn_mask = self.get_batch_click_embedding(points, row, col)
+        # query_points = query_points.transpose(0, 1).contiguous()  # B, num_points, c -> num_points, B, c
 
         image, prev_mask = self.prepare_input(image)
         coord_features = self.get_coord_features(image, prev_mask, points)
 
         coord_features = self.maps_transform(coord_features)
-        outputs = self.backbone_forward(image, query_points, points_attn_mask, coord_features)
+        outputs = self.backbone_forward(image, None, None, coord_features)
 
         if not isinstance(outputs['instances'], tuple):
             outputs['instances'] = nn.functional.interpolate(outputs['instances'], size=image.size()[2:],
