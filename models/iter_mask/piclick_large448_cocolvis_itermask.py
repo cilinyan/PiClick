@@ -92,7 +92,34 @@ def init_model(cfg):
             positional_encoding=dict(
                 type='SinePositionalEncoding', num_feats=256, normalize=True),
             init_cfg=None
-        ))
+        )),
+        transformer_decoder=edict(dict(
+            type='DetrTransformerDecoder',
+            return_intermediate=True,
+            num_layers=9,
+            transformerlayers=dict(
+                type='DetrTransformerDecoderLayer',
+                attn_cfgs=dict(
+                    type='MultiheadAttention',
+                    embed_dims=512,
+                    num_heads=8,
+                    attn_drop=0.0,
+                    proj_drop=0.0,
+                    dropout_layer=None,
+                    batch_first=False),
+                ffn_cfgs=dict(
+                    embed_dims=512,
+                    feedforward_channels=2048,
+                    num_fcs=2,
+                    act_cfg=dict(type='ReLU', inplace=True),
+                    ffn_drop=0.0,
+                    dropout_layer=None,
+                    add_identity=True),
+                feedforward_channels=2048,
+                operation_order=('cross_attn', 'norm', 'self_attn', 'norm', 'ffn', 'norm')),
+            init_cfg=None
+        )),
+        positional_encoding=edict(dict(type='SinePositionalEncoding', num_feats=256, normalize=True)),
     )
 
     model = PiClickModel(
