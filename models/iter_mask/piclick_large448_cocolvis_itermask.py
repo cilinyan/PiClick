@@ -195,7 +195,7 @@ def train(model, cfg, model_cfg):
     if cfg.local_rank == 0:
         logger.info('Total Batch Size: {}'.format(cfg.batch_size))
 
-    optimizer_params = {'lr': 5e-5 * 140 / cfg.batch_size, 'betas': (0.9, 0.999), 'eps': 1e-8}
+    optimizer_params = {'lr': 5e-5 * 72 / cfg.batch_size, 'betas': (0.9, 0.999), 'eps': 1e-8}
 
     lr_scheduler = partial(torch.optim.lr_scheduler.MultiStepLR, milestones=[50, 62], gamma=0.1)
     trainer = ISTrainerPiClick(model, cfg, model_cfg, loss_cfg,
