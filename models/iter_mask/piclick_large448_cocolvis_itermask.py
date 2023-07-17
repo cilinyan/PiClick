@@ -59,6 +59,40 @@ def init_model(cfg):
         feat_channels=512,
         out_channels=512,
         num_transformer_feat_level=3,
+        pixel_decoder=edict(dict(
+            type='MSDeformAttnPixelDecoder',
+            num_outs=3,
+            norm_cfg=dict(type='GN', num_groups=32),
+            act_cfg=dict(type='ReLU'),
+            encoder=dict(
+                type='DetrTransformerEncoder',
+                num_layers=6,
+                transformerlayers=dict(
+                    type='BaseTransformerLayer',
+                    attn_cfgs=dict(
+                        type='MultiScaleDeformableAttention',
+                        embed_dims=512,
+                        num_heads=8,
+                        num_levels=3,
+                        num_points=4,
+                        im2col_step=64,
+                        dropout=0.0,
+                        batch_first=False,
+                        norm_cfg=None,
+                        init_cfg=None),
+                    ffn_cfgs=dict(
+                        type='FFN',
+                        embed_dims=512,
+                        feedforward_channels=2048,
+                        num_fcs=2,
+                        ffn_drop=0.0,
+                        act_cfg=dict(type='ReLU', inplace=True)),
+                    operation_order=('self_attn', 'norm', 'ffn', 'norm')),
+                init_cfg=None),
+            positional_encoding=dict(
+                type='SinePositionalEncoding', num_feats=256, normalize=True),
+            init_cfg=None
+        ))
     )
 
     model = PiClickModel(
@@ -70,6 +104,7 @@ def init_model(cfg):
         backbone_params=backbone_params,
         head_params=head_params,
         neck_params=neck_params,
+        click_pos_enc_cfg=dict(type='SinePositionalEncoding', num_feats=256, normalize=True)
     )
 
     model.backbone.init_weights_from_pretrained(cfg.IMAGENET_PRETRAINED_MODELS.MAE_LARGE)
