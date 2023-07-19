@@ -5,7 +5,7 @@ from isegm.engine.trainer_piclick import ISTrainerPiClick
 
 """
 python -m torch.distributed.launch --nproc_per_node=7 --master_port=59516 --use_env train.py \
-  models/iter_mask/piclick_pe_base448_cocolvis_itermask_3m.py \
+  models/iter_mask/piclick_pe_base448_cocolvis_itermask_7m.py \
   --batch-size=140 \
   --ngpus=7 
 """
