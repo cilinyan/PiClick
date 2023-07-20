@@ -3,6 +3,13 @@ from isegm.model.losses_despair import DETRLikeDespairLoss
 from isegm.model.is_piclick_model import PiClickModel
 from isegm.engine.trainer_piclick import ISTrainerPiClick
 
+"""
+python -m torch.distributed.launch --nproc_per_node=7 --master_port=59516 --use_env train.py \
+  models/iter_mask/piclick_base448_cocolvis_itermask_2m.py \
+  --batch-size=140 \
+  --ngpus=7
+"""
+
 MODEL_NAME = 'piclick_base448_cocolvis_itermask_2m'
 
 _PARAMS = dict(
