@@ -1,16 +1,16 @@
 from isegm.utils.exp_imports.default import *
 from isegm.model.losses_despair import DETRLikeDespairLoss
-from isegm.model.is_piclick_pe_model import PiClickPEModel
+from isegm.model.is_piclick_mp_model import PiClickMPModel
 from isegm.engine.trainer_piclick import ISTrainerPiClick
 
 """
 python -m torch.distributed.launch --nproc_per_node=7 --master_port=59516 --use_env train.py \
-  models/iter_mask/piclick_pe_base448_cocolvis_itermask_3m.py \
+  models/iter_mask/piclick_mp_base448_cocolvis_itermask_7m.py \
   --batch-size=140 \
-  --ngpus=7 
+  --ngpus=7
 """
 
-MODEL_NAME = 'piclick_PE_base448_cocolvis_itermask_3m'
+MODEL_NAME = 'piclick_MP_base448_cocolvis_itermask_3m'
 
 _PARAMS = dict(
     num_queries=3,
@@ -61,7 +61,7 @@ def init_model(cfg):
         num_transformer_feat_level=3,
     )
 
-    model = PiClickPEModel(
+    model = PiClickMPModel(
         num_classes=_PARAMS['num_classes'],
         num_queries=_PARAMS['num_queries'],
         use_disks=True,
