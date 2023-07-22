@@ -10,10 +10,10 @@ python -m torch.distributed.launch --nproc_per_node=7 --master_port=59516 --use_
   --ngpus=7 
 """
 
-MODEL_NAME = 'piclick_PE_base448_cocolvis_itermask_3m'
+MODEL_NAME = 'piclick_PE_base448_cocolvis_itermask_7m'
 
 _PARAMS = dict(
-    num_queries=3,
+    num_queries=7,
     num_classes=1,
 )
 
