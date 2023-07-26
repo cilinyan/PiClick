@@ -12,8 +12,7 @@ python -m torch.distributed.launch --nproc_per_node=7 --master_port=59516 --use_
 python scripts/evaluate_model.py NoBRS --gpu=0 \
   --checkpoint=/intern-share/clyan/pretrain/piclick/piclick_large448.pth \
   --eval-mode=cvpr \
-  --datasets=GrabCut,Berkeley,SBD,DAVIS,PascalVOC,COCO_MVal,ssTEM,BraTS,OAIZIB \
-  --logs-path logs/piclick_large_7m_62e_noc_ | tee logs/piclick_large_7m_62e_noc_.log
+  --datasets=GrabCut,Berkeley,SBD,DAVIS,PascalVOC,COCO_MVal,ssTEM,BraTS,OAIZIB
 """
 
 MODEL_NAME = 'piclick_large448_cocolvis_itermask_7m'

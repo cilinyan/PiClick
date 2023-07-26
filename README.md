@@ -1,4 +1,4 @@
-## [PiClick: Picking the desired mask in click-based interactive segmentation](https://arxiv.org/abs/2304.11609)
+## PiClick: Picking the desired mask in click-based interactive segmentation
 
 <p align="center">
   <img src="./assets/piclick_architecture.png" alt="drawing", width="700"/>
@@ -28,29 +28,41 @@ Before evaluation, please download the datasets and models, and then configure t
 Use the following code to evaluate the base model.
 
 ```
+# ViT-B
 python scripts/evaluate_model.py NoBRS --gpu=0 \
   --checkpoint=./weights/piclick_base448.pth \
   --eval-mode=cvpr \
-  --datasets=GrabCut,Berkeley,DAVIS,PascalVOC,SBD,COCO_MVal,ssTEM,BraTS,OAIZIB
+  --datasets=GrabCut,Berkeley,SBD,DAVIS,PascalVOC,COCO_MVal,ssTEM,BraTS,OAIZIB
+# ViT-L
+python scripts/evaluate_model.py NoBRS --gpu=0 \
+  --checkpoint=./weights/piclick_large448.pth \
+  --eval-mode=cvpr \
+  --datasets=GrabCut,Berkeley,SBD,DAVIS,PascalVOC,COCO_MVal,ssTEM,BraTS,OAIZIB
 ```
 
 ## Training
 
 Before training, please download the [MAE](https://github.com/facebookresearch/mae) pretrained weights (click to
-download: [ViT-Base](https://dl.fbaipublicfiles.com/mae/pretrain/mae_pretrain_vit_base.pth)).
+download: [ViT-Base](https://dl.fbaipublicfiles.com/mae/pretrain/mae_pretrain_vit_base.pth), [ViT-Large](https://dl.fbaipublicfiles.com/mae/pretrain/mae_pretrain_vit_large.pth)).
 
 Use the following code to train a base model on COCO+LVIS dataset:
 
 ```
+# ViT-B
 python -m torch.distributed.launch --nproc_per_node=8 --master_port=59566 --use_env train.py \
   models/iter_mask/piclick_base448_cocolvis_itermask.py \
   --batch-size=136 \
   --ngpus=8
+# ViT-L
+python -m torch.distributed.launch --nproc_per_node=8 --master_port=59516 --use_env train.py \
+  models/iter_mask/piclick_large448_cocolvis_itermask.py \
+  --batch-size=56 \
+  --ngpus=8 
 ```
 
 ## Download
 
-PiClick models: [Google Drive](https://drive.google.com/file/d/1ZMMzhiA7ocU9Wgr0xnB0ruGHhpOLklWG/view?usp=sharing)
+PiClick models: [Google Drive](https://drive.google.com/drive/folders/1-ZOZ0o-wYGhiHfOzpyqq_ikY6gLLbP8S?usp=sharing)
 
 BraTS dataset (369
 cases): [Google Drive](https://drive.google.com/drive/folders/1B6y1nNBnWU09EhxvjaTdp1XGjc1T6wUk?usp=sharing)
@@ -67,25 +79,14 @@ Other datasets: [RITM Github](https://github.com/saic-vul/ritm_interactive_segme
 The code is released under the MIT License. It is a short, permissive software license. Basically, you can do whatever
 you want as long as you include the original copyright and license notice in any copy of the software/source.
 
-## Citation
-
-```
-@misc{yan2023piclick,
-      title={PiClick: Picking the desired mask in click-based interactive segmentation}, 
-      author={Cilin Yan and Haochen Wang and Jie Liu and Xiaolong Jiang and Yao Hu and Xu Tang and Guoliang Kang and Efstratios Gavves},
-      year={2023},
-      eprint={2304.11609},
-      archivePrefix={arXiv},
-      primaryClass={cs.CV}
-}
-```
-
 ## Note
+
 The according annotation platform will be released upon publication.
+
 ## Acknowledgement
 
-Our project is developed based on 
-[RITM](https://github.com/saic-vul/ritm_interactive_segmentation), 
-[SimpleClick](https://github.com/uncbiag/SimpleClick/tree/v1.0) and 
+Our project is developed based on
+[RITM](https://github.com/saic-vul/ritm_interactive_segmentation),
+[SimpleClick](https://github.com/uncbiag/SimpleClick/tree/v1.0) and
 [mmdetection](https://github.com/open-mmlab/mmdetection).
 We thank the authors for their great work.
