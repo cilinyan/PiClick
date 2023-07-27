@@ -5,17 +5,17 @@ from isegm.engine.trainer_piclick import ISTrainerPiClick
 
 """
 python -m torch.distributed.launch --nproc_per_node=2 --master_port=59516 --use_env train.py \
-  models/iter_mask/piclick_large448_cocolvis_itermask.py \
+  models/iter_mask/piclick_huge448_cocolvis_itermask.py \
   --batch-size=4 \
   --ngpus=2
 
 python -m torch.distributed.launch --nproc_per_node=7 --master_port=59516 --use_env train.py \
-  models/iter_mask/piclick_large448_cocolvis_itermask.py \
+  models/iter_mask/piclick_huge448_cocolvis_itermask.py \
   --batch-size=56 \
   --ngpus=7 
   
 python scripts/evaluate_model.py NoBRS --gpu=0 \
-  --checkpoint=/intern-share/clyan/pretrain/piclick/piclick_large448.pth \
+  --checkpoint=/intern-share/clyan/pretrain/piclick/piclick_huge448.pth \
   --eval-mode=cvpr \
   --datasets=GrabCut,Berkeley,SBD,DAVIS,PascalVOC,COCO_MVal,ssTEM,BraTS,OAIZIB
 """
@@ -52,7 +52,6 @@ def init_model(cfg):
         in_chans=3,
         embed_dim=1280,
         depth=32,
-        global_atten_freq=8,
         num_heads=16,
         mlp_ratio=4,
         qkv_bias=True,
