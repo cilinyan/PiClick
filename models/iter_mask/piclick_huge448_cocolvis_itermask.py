@@ -4,14 +4,9 @@ from isegm.model.is_piclick_model import PiClickModel
 from isegm.engine.trainer_piclick import ISTrainerPiClick
 
 """
-python -m torch.distributed.launch --nproc_per_node=2 --master_port=59516 --use_env train.py \
-  models/iter_mask/piclick_huge448_cocolvis_itermask.py \
-  --batch-size=4 \
-  --ngpus=2
-
 python -m torch.distributed.launch --nproc_per_node=7 --master_port=59516 --use_env train.py \
   models/iter_mask/piclick_huge448_cocolvis_itermask.py \
-  --batch-size=56 \
+  --batch-size=14 \
   --ngpus=7 
   
 python scripts/evaluate_model.py NoBRS --gpu=0 \
