@@ -144,7 +144,7 @@ def init_model(cfg):
         click_pos_enc_cfg=dict(type='SinePositionalEncoding', num_feats=256, normalize=True)
     )
 
-    model.backbone.init_weights_from_pretrained(cfg.IMAGENET_PRETRAINED_MODELS.VIT_HUGE)
+    model.backbone.init_weights_from_pretrained(cfg.IMAGENET_PRETRAINED_MODELS.MAE_HUGE)
     model.to(cfg.device)
 
     return model, model_cfg
