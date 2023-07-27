@@ -3,7 +3,24 @@ from isegm.model.losses_despair import DETRLikeDespairLoss
 from isegm.model.is_piclick_model import PiClickModel
 from isegm.engine.trainer_piclick import ISTrainerPiClick
 
-MODEL_NAME = 'piclick_large448_cocolvis_itermask_7m'
+"""
+python -m torch.distributed.launch --nproc_per_node=2 --master_port=59516 --use_env train.py \
+  models/iter_mask/piclick_large448_cocolvis_itermask.py \
+  --batch-size=4 \
+  --ngpus=2
+
+python -m torch.distributed.launch --nproc_per_node=7 --master_port=59516 --use_env train.py \
+  models/iter_mask/piclick_large448_cocolvis_itermask.py \
+  --batch-size=56 \
+  --ngpus=7 
+  
+python scripts/evaluate_model.py NoBRS --gpu=0 \
+  --checkpoint=/intern-share/clyan/pretrain/piclick/piclick_large448.pth \
+  --eval-mode=cvpr \
+  --datasets=GrabCut,Berkeley,SBD,DAVIS,PascalVOC,COCO_MVal,ssTEM,BraTS,OAIZIB
+"""
+
+MODEL_NAME = 'piclick_huge448_cocolvis_itermask_7m'
 
 _PARAMS = dict(
     num_queries=7,
@@ -31,24 +48,25 @@ def init_model(cfg):
 
     backbone_params = dict(
         img_size=model_cfg.crop_size,
-        patch_size=(16, 16),
+        patch_size=(14,14),
         in_chans=3,
-        embed_dim=1024,
-        depth=24,
+        embed_dim=1280,
+        depth=32,
+        global_atten_freq=8,
         num_heads=16,
         mlp_ratio=4,
         qkv_bias=True,
     )
 
     neck_params = dict(
-        in_dim=1024,
-        out_dims=[192, 384, 768, 1536],
+        in_dim=1280,
+        out_dims=[240, 480, 960, 1920],
     )
 
     head_params = dict(
         num_classes=_PARAMS['num_classes'],
         num_queries=_PARAMS['num_queries'],
-        in_channels=[192, 384, 768, 1536],
+        in_channels=[240, 480, 960, 1920],
         feat_channels=512,
         out_channels=512,
         num_transformer_feat_level=3,
@@ -127,7 +145,7 @@ def init_model(cfg):
         click_pos_enc_cfg=dict(type='SinePositionalEncoding', num_feats=256, normalize=True)
     )
 
-    model.backbone.init_weights_from_pretrained(cfg.IMAGENET_PRETRAINED_MODELS.MAE_LARGE)
+    model.backbone.init_weights_from_pretrained(cfg.MAE_PRETRAINED_MODELS.VIT_HUGE)
     model.to(cfg.device)
 
     return model, model_cfg
