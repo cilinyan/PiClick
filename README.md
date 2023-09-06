@@ -1,4 +1,4 @@
-## PiClick: Picking the desired mask in click-based interactive segmentation
+## [PiClick: Picking the desired mask in click-based interactive segmentation](https://arxiv.org/abs/2304.11609)
 
 <p align="center">
   <img src="./assets/architecture.png" alt="drawing", width="700"/>
