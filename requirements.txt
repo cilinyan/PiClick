@@ -6,6 +6,7 @@ albumentations==0.5.2
 PyYAML==6.0
 easydict==1.9
 tensorboard==2.8.0
+opencv-python==4.5.3.56
 opencv-python-headless==4.5.3.56
 albumentations==0.5.2
 mmcv-full==1.6.2
