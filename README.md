@@ -38,12 +38,17 @@ python scripts/evaluate_model.py NoBRS --gpu=0 \
   --checkpoint=./weights/piclick_large448.pth \
   --eval-mode=cvpr \
   --datasets=GrabCut,Berkeley,SBD,DAVIS,PascalVOC,COCO_MVal,ssTEM,BraTS,OAIZIB
+# ViT-H
+python scripts/evaluate_model.py NoBRS --gpu=0 \
+  --checkpoint=./weights/piclick_huge448.pth \
+  --eval-mode=cvpr \
+  --datasets=GrabCut,Berkeley,SBD,DAVIS,PascalVOC,COCO_MVal,ssTEM,BraTS,OAIZIB
 ```
 
 ## Training
 
 Before training, please download the [MAE](https://github.com/facebookresearch/mae) pretrained weights (click to
-download: [ViT-Base](https://dl.fbaipublicfiles.com/mae/pretrain/mae_pretrain_vit_base.pth), [ViT-Large](https://dl.fbaipublicfiles.com/mae/pretrain/mae_pretrain_vit_large.pth)).
+download: [ViT-Base](https://dl.fbaipublicfiles.com/mae/pretrain/mae_pretrain_vit_base.pth), [ViT-Large](https://dl.fbaipublicfiles.com/mae/pretrain/mae_pretrain_vit_large.pth), [ViT-Huge](https://dl.fbaipublicfiles.com/mae/pretrain/mae_pretrain_vit_huge.pth)).
 
 Use the following code to train a base model on COCO+LVIS dataset:
 
@@ -57,12 +62,18 @@ python -m torch.distributed.launch --nproc_per_node=8 --master_port=59566 --use_
 python -m torch.distributed.launch --nproc_per_node=8 --master_port=59516 --use_env train.py \
   models/iter_mask/piclick_large448_cocolvis_itermask.py \
   --batch-size=56 \
-  --ngpus=8 
+  --ngpus=8
+# ViT-H (A100, 80G)
+python -m torch.distributed.launch --nproc_per_node=8 --master_port=59516 --use_env train.py \
+  models/iter_mask/piclick_huge448_cocolvis_itermask.py \
+  --batch-size=96 \
+  --ngpus=8 \
+  --workers 48
 ```
 
 ## Download
 
-PiClick models: [Google Drive](https://drive.google.com/drive/folders/1-ZOZ0o-wYGhiHfOzpyqq_ikY6gLLbP8S?usp=sharing)
+PiClick models: [Google Drive](https://drive.google.com/drive/folders/1-ZOZ0o-wYGhiHfOzpyqq_ikY6gLLbP8S?usp=sharing), [Baidu Wangpan(1234)](https://pan.baidu.com/s/1T2dr12Y7EbcblVJLDyXn3w)
 
 BraTS dataset (369
 cases): [Google Drive](https://drive.google.com/drive/folders/1B6y1nNBnWU09EhxvjaTdp1XGjc1T6wUk?usp=sharing)
