@@ -12,7 +12,7 @@
 
 ## Environment
 
-Training and evaluation environment: Python3.8.16, PyTorch 1.11.0, CentOS 7.9, CUDA 11.4. Run the following command to
+Training and evaluation environment: Python3.8.16, PyTorch 1.11.0, CentOS 7.9, CUDA 11.4, mmcv-full 1.6.2. Run the following command to
 install required packages.
 
 ```
