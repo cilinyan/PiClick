@@ -73,7 +73,7 @@ python -m torch.distributed.launch --nproc_per_node=8 --master_port=59516 --use_
 
 ## Download
 
-PiClick models: [Google Drive](https://drive.google.com/drive/folders/1-ZOZ0o-wYGhiHfOzpyqq_ikY6gLLbP8S?usp=sharing), [Baidu Wangpan(1234)](https://pan.baidu.com/s/1T2dr12Y7EbcblVJLDyXn3w&pwd=1234)
+PiClick models: [Google Drive](https://drive.google.com/drive/folders/1-ZOZ0o-wYGhiHfOzpyqq_ikY6gLLbP8S?usp=sharing), [Baidu Wangpan](https://pan.baidu.com/s/1T2dr12Y7EbcblVJLDyXn3w&pwd=1234)
 
 BraTS dataset (369
 cases): [Google Drive](https://drive.google.com/drive/folders/1B6y1nNBnWU09EhxvjaTdp1XGjc1T6wUk?usp=sharing)
