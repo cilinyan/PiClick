@@ -97,11 +97,13 @@ The according annotation platform will be released upon publication.
 ## Citation
 
 ```
-@article{yan2023piclick,
-  title={PiClick: Picking the desired mask in click-based interactive segmentation},
+@article{yan2024piclick,
+  title={PiClick: Picking the desired mask from multiple candidates in click-based interactive segmentation},
   author={Yan, Cilin and Wang, Haochen and Liu, Jie and Jiang, Xiaolong and Hu, Yao and Tang, Xu and Kang, Guoliang and Gavves, Efstratios},
-  journal={arXiv preprint arXiv:2304.11609},
-  year={2023}
+  journal={Neurocomputing},
+  pages={128083},
+  year={2024},
+  publisher={Elsevier}
 }
 ```
 
